@@ -15,7 +15,7 @@ const (
 	LocalVersion      = "1.5.10"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
-	ProjectUrl        = "https://github.com/yzy613/ddns-watchdog"
+	ProjectUrl        = "https://github.com/y1jiong/ddns-watchdog"
 )
 
 // 内容应全小写

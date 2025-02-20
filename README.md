@@ -12,11 +12,11 @@
 # ddns-watchdog
 
 [![Language](https://img.shields.io/badge/language-Go-00acd7)](https://go.dev)
-[![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/yzy613/ddns-watchdog/?ref=repository-badge)
-[![.github/workflows/go.yml](https://github.com/yzy613/ddns-watchdog/actions/workflows/go.yml/badge.svg)](https://github.com/yzy613/ddns-watchdog/actions/workflows/go.yml)
-[![Releases](https://img.shields.io/github/v/release/yzy613/ddns-watchdog)](https://github.com/yzy613/ddns-watchdog/releases)
-[![Downloads](https://img.shields.io/github/downloads/yzy613/ddns-watchdog/total)](https://github.com/yzy613/ddns-watchdog/releases)
-[![ClickDownload](https://img.shields.io/badge/%E7%82%B9%E5%87%BB-%E4%B8%8B%E8%BD%BD-brightgreen)](https://github.com/yzy613/ddns-watchdog/releases)
+[![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/y1jiong/ddns-watchdog/?ref=repository-badge)
+[![.github/workflows/go.yml](https://github.com/y1jiong/ddns-watchdog/actions/workflows/go.yml/badge.svg)](https://github.com/y1jiong/ddns-watchdog/actions/workflows/go.yml)
+[![Releases](https://img.shields.io/github/v/release/y1jiong/ddns-watchdog)](https://github.com/y1jiong/ddns-watchdog/releases)
+[![Downloads](https://img.shields.io/github/downloads/y1jiong/ddns-watchdog/total)](https://github.com/y1jiong/ddns-watchdog/releases)
+[![ClickDownload](https://img.shields.io/badge/%E7%82%B9%E5%87%BB-%E4%B8%8B%E8%BD%BD-brightgreen)](https://github.com/y1jiong/ddns-watchdog/releases)
 
 现已支持 DNSPod AliDNS(阿里云 DNS) Cloudflare HuaweiCloud(华为云)，支持 IPv4 IPv6 双栈，支持使用网卡 IP 地址。支持自建中心节点代理客户端修改域名解析记录。
 
@@ -24,7 +24,7 @@
 
 1. 拥有 (公网动态) IPv6 地址或 (公网动态) IPv4 地址
 2. 拥有一个能申请修改解析记录的 Token 的域名 (若没有，可以前往 DNSPod 阿里云或其他提供商购买域名)
-3. 域名的 DNS 服务器指向 [支持的服务商](https://github.com/yzy613/ddns-watchdog#%E6%94%AF%E6%8C%81%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%95%86)
+3. 域名的 DNS 服务器指向 [支持的服务商](https://github.com/y1jiong/ddns-watchdog#%E6%94%AF%E6%8C%81%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%95%86)
 
 ## 客户端
 
@@ -108,10 +108,10 @@ Usage:
 
 ### 第一次使用？
 
-1. 前往 [releases](https://github.com/yzy613/ddns-watchdog/releases) 下载符合自己系统的压缩包，解压得到二进制文件
+1. 前往 [releases](https://github.com/y1jiong/ddns-watchdog/releases) 下载符合自己系统的压缩包，解压得到二进制文件
 2. 注意：Windows 的记事本保存的文件编码为 UTF-8 with BOM，需要使用第三方编辑器手动重新编码为 UTF-8，否则将会出现乱码导致无法读取正确的配置
 3. 在 Linux 上不要忘记程序需要执行权限 `chmod 700 ddns-watchdog-client`
-4. 使用 `./ddns-watchdog-client -i 01234` 初始化配置文件 (在 Windows 上使用 [ddns-watchdog-client-startup-script.bat](https://github.com/yzy613/ddns-watchdog/blob/master/ddns-watchdog-client-startup-script.bat) 一气呵成)
+4. 使用 `./ddns-watchdog-client -i 01234` 初始化配置文件 (在 Windows 上使用 [ddns-watchdog-client-startup-script.bat](https://github.com/y1jiong/ddns-watchdog/blob/master/ddns-watchdog-client-startup-script.bat) 一气呵成)
 5. 根据使用环境确定启用 (`enable`) IPv4 还是 IPv6 或是两者都启用
 6. 若未启用网卡，默认使用 API 获取对应 IP 地址
 7. 若需使用网卡的 IP 地址，请在 `./conf/client.json` 修改 `network_card`->`enable` 为 `true` 并运行一次程序自动获取网卡信息，从 `./conf/network_card.json` 里面选择网卡填入 `./conf/client.json` 的 `network_card`
@@ -131,7 +131,7 @@ Usage:
       }
     }
     ```
-9. 按照 [支持的服务商](https://github.com/yzy613/ddns-watchdog#%E6%94%AF%E6%8C%81%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%95%86) 进行配置
+9. 按照 [支持的服务商](https://github.com/y1jiong/ddns-watchdog#%E6%94%AF%E6%8C%81%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%95%86) 进行配置
 10. 若需配置不同域名的 ddns-watchdog，可以结合 `-c` 启动参数配置多种配置文件 (可搭配 `-i` 启动参数初始化配置文件)
 11. 如果解析记录值更新成功，那么程序工作正常，可以在 `./conf/client.json` 启用 `check_cycle_minutes` 进行定期检查 (单位：分钟)(默认为 0，意为不启用定期检查)
 12. 注意：ddns-watchdog 设计了 IP 地址本地比对机制，以防止频繁访问 API 导致封禁。若手动修改了解析记录值，会导致无法及时更新 (可搭配 `-f` 启动参数强制检查解析记录值以跳过本地比对机制)
@@ -145,8 +145,8 @@ Usage:
   1. 使用 `./ddns-watchdog-client -I` 安装服务，就可以使用 `systemctl` 管理 ddns-watchdog-client 服务了
 - 在 Windows 上
 
-  1. [ddns-watchdog-client-startup-script.bat](https://github.com/yzy613/ddns-watchdog/blob/master/scripts/run/ddns-watchdog-client-startup-script.bat) 一键运行程序并回显程序返回的信息 (需与 ddns-watchdog-client.exe 同一文件夹)
-  2. [ddns-watchdog-client-nohup.vbs](https://github.com/yzy613/ddns-watchdog/blob/master/scripts/run/ddns-watchdog-client-nohup.vbs) 不弹出运行窗口，在后台静默运行 (需与 ddns-watchdog-client.exe 同一文件夹)
+  1. [ddns-watchdog-client-startup-script.bat](https://github.com/y1jiong/ddns-watchdog/blob/master/scripts/run/ddns-watchdog-client-startup-script.bat) 一键运行程序并回显程序返回的信息 (需与 ddns-watchdog-client.exe 同一文件夹)
+  2. [ddns-watchdog-client-nohup.vbs](https://github.com/y1jiong/ddns-watchdog/blob/master/scripts/run/ddns-watchdog-client-nohup.vbs) 不弹出运行窗口，在后台静默运行 (需与 ddns-watchdog-client.exe 同一文件夹)
   3. `Win`+`R` 后键入 `shell:startup` 会打开开机启动文件夹，将快捷方式粘贴在此处，即可进行开机启动 (或把 ddns-watchdog-client-nohup.vbs 的快捷方式粘贴在此处，进行开机启动后台静默运行)
 
 ### 支持的服务商
@@ -234,7 +234,7 @@ Usage:
 
 #### 没有找到你的域名解析服务商？
 
-- 请在 [Issues](https://github.com/yzy613/ddns-watchdog/issues) 提出 Issue 或者在 [Pull requests](https://github.com/yzy613/ddns-watchdog/pulls) Pull request (感激不尽)
+- 请在 [Issues](https://github.com/y1jiong/ddns-watchdog/issues) 提出 Issue 或者在 [Pull requests](https://github.com/y1jiong/ddns-watchdog/pulls) Pull request (感激不尽)
 
 ## 服务端
 
