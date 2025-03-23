@@ -204,7 +204,7 @@ func Install() (err error) {
 	if err = os.WriteFile(InstallPath, serviceContent, 0600); err != nil {
 		return
 	}
-	log.Println("可以使用 systemctl 控制 " + RunningName + " 服务了")
+	log.Println("可以使用 systemctl 控制", RunningName, "服务了")
 	return
 }
 
@@ -220,6 +220,6 @@ func Uninstall() (err error) {
 		return
 	}
 	log.Println("卸载服务成功")
-	log.Println("若要完全删除，请移步到 " + wd + " 和 " + ConfDirectoryName + " 完全删除")
+	log.Println("若要完全删除，请移步到", wd, "和", ConfDirectoryName, "完全删除")
 	return
 }

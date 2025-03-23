@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -265,7 +264,7 @@ func accessCenter(ipv4, ipv6 string) {
 
 	// 处理结果
 	if resp.StatusCode != http.StatusOK {
-		log.Println("The status code returned by the center is " + strconv.Itoa(resp.StatusCode))
+		log.Println("The status code returned by the center is", resp.StatusCode)
 	}
 	respBodyJson, err := io.ReadAll(resp.Body)
 	if err != nil {

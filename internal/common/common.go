@@ -12,10 +12,15 @@ import (
 )
 
 const (
-	LocalVersion      = "1.5.10"
+	LocalVersion      = "1.5.11"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
 	ProjectUrl        = "https://github.com/y1jiong/ddns-watchdog"
+)
+
+var (
+	GitCommit = ""
+	BuildTime = ""
 )
 
 // 内容应全小写
@@ -168,9 +173,11 @@ func ExpandIPv6Zero(ip string) string {
 }
 
 func VersionTips(LatestVersion string) {
-	fmt.Println("当前版本 ", LocalVersion)
-	fmt.Println("最新版本 ", LatestVersion)
-	fmt.Println("项目地址 ", ProjectUrl)
+	fmt.Println("当前版本", LocalVersion)
+	fmt.Println("最新版本", LatestVersion)
+	fmt.Println("项目地址", ProjectUrl)
+	fmt.Println("Git Commit:", GitCommit)
+	fmt.Println("Build Time:", BuildTime)
 	switch {
 	case strings.Contains(LatestVersion, "N/A"):
 		fmt.Println("\n" + LatestVersion + "\n需要手动检查更新，请前往 项目地址 查看")

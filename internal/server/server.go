@@ -81,10 +81,11 @@ func (conf *server) GetLatestVersion() (str string) {
 
 func (conf *server) CheckLatestVersion() {
 	if !conf.IsRootServer {
-		LatestVersion := conf.GetLatestVersion()
-		common.VersionTips(LatestVersion)
+		common.VersionTips(conf.GetLatestVersion())
 	} else {
 		fmt.Println("本机是根服务器")
-		fmt.Println("当前版本 ", common.LocalVersion)
+		fmt.Println("当前版本", common.LocalVersion)
+		fmt.Println("Git Commit:", common.GitCommit)
+		fmt.Println("Build Time:", common.BuildTime)
 	}
 }
