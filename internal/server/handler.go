@@ -27,6 +27,8 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(sendJson)
 	if err != nil {
 		log.Println(err)
@@ -73,8 +75,6 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 	// 模拟客户端
 	httpStatus, respBody, err := doVirtualClient(body, whitelist[body.Token])
 	if err != nil {
@@ -94,6 +94,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(respJson)
 	if err != nil {
 		log.Println(err)
