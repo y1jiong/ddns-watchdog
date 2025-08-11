@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	dns "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2/model"
@@ -46,8 +47,7 @@ func (hc *HuaweiCloud) LoadConf() (err error) {
 
 func (hc *HuaweiCloud) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, errs []error) {
 	if hc.ZoneId == "" && (enabled.IPv4 || enabled.IPv6) {
-		err := hc.getZoneId()
-		if err != nil {
+		if err := hc.getZoneId(); err != nil {
 			errs = append(errs, err)
 			return
 		}
