@@ -6,10 +6,11 @@ import (
 	"ddns-watchdog/internal/server"
 	"errors"
 	"fmt"
-	flag "github.com/spf13/pflag"
 	"log"
 	"net/http"
 	"time"
+
+	flag "github.com/spf13/pflag"
 )
 
 var (
@@ -42,7 +43,6 @@ func main() {
 	exit, err := processFlag()
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
 	if exit {
 		return
@@ -86,6 +86,7 @@ func main() {
 
 func processFlag() (exit bool, err error) {
 	flag.Parse()
+
 	if *confPath != "" {
 		server.ConfDirectoryName = common.FormatDirectoryPath(*confPath)
 	}
@@ -101,7 +102,7 @@ func processFlag() (exit bool, err error) {
 	}
 
 	if *deleteB {
-		msg := ""
+		var msg string
 		if *token != "" {
 			msg, err = server.DelFromWhitelist(*token)
 		} else {
@@ -110,11 +111,12 @@ func processFlag() (exit bool, err error) {
 		if err != nil {
 			return
 		}
+
 		fmt.Print(msg)
 		return true, nil
 	}
 
-	currentToken := ""
+	var currentToken string
 	// 获取 token
 	switch {
 	case *token != "":
@@ -125,6 +127,7 @@ func processFlag() (exit bool, err error) {
 			err = errors.New("生成 token 的长度不符合要求")
 			return
 		}
+
 		currentToken = server.GenerateToken(length)
 		fmt.Println("Token: " + currentToken)
 		exit = true
@@ -132,7 +135,7 @@ func processFlag() (exit bool, err error) {
 
 	// 添加 token 到白名单
 	if *add {
-		status := ""
+		var status string
 		m := *message
 		if len(m) > 32 {
 			err = errors.New("token message 备注信息过长")
@@ -141,15 +144,17 @@ func processFlag() (exit bool, err error) {
 		if currentToken == "" || len(currentToken) < 16 || len(currentToken) > 127 {
 			err = errors.New("token 不符合要求")
 			return
-		} else {
-			if m == "" {
-				m = "undefined"
-			}
-			status, err = server.AddToWhitelist(currentToken, *message, *service, *domain, *a, *aaaa)
-			if err != nil {
-				return
-			}
 		}
+
+		if m == "" {
+			m = "undefined"
+		}
+
+		status, err = server.AddToWhitelist(currentToken, *message, *service, *domain, *a, *aaaa)
+		if err != nil {
+			return
+		}
+
 		exit = true
 
 		switch status {
@@ -187,7 +192,7 @@ func processFlag() (exit bool, err error) {
 }
 
 func initConf(event string) (err error) {
-	msg := ""
+	var msg string
 	switch event {
 	case "0":
 		msg, err = server.Srv.InitConf()
@@ -201,6 +206,7 @@ func initConf(event string) (err error) {
 	if err != nil {
 		return
 	}
+
 	log.Println(msg)
 	return
 }

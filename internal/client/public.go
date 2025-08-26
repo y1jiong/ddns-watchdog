@@ -34,15 +34,18 @@ func Install() (err error) {
 	if common.IsWindows() {
 		return errors.New("windows 暂不支持安装到系统")
 	}
+
 	// 注册系统服务
 	if Client.CheckCycleMinutes == 0 {
 		err = errors.New("设置一下 " + ConfDirectoryName + "/" + ConfFileName + " 的 check_cycle_minutes 吧")
 		return
 	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return
 	}
+
 	serviceContent := []byte(
 		"[Unit]\n" +
 			"Description=" + ProjName + " Service\n" +
@@ -56,9 +59,11 @@ func Install() (err error) {
 			"[Install]\n" +
 			"WantedBy=multi-user.target\n",
 	)
+
 	if err = os.WriteFile(installPath, serviceContent, 0600); err != nil {
 		return
 	}
+
 	log.Println("可以使用 systemctl 管理", ProjName, "服务了")
 	return
 }
@@ -67,13 +72,16 @@ func Uninstall() (err error) {
 	if common.IsWindows() {
 		return errors.New("windows 暂不支持安装到系统")
 	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return
 	}
+
 	if err = os.Remove(installPath); err != nil {
 		return
 	}
+
 	log.Println("卸载服务成功")
 	log.Println("若要完全删除，请移步到", wd, "和", ConfDirectoryName, "完全删除")
 	return
@@ -93,6 +101,7 @@ func NetworkCardRespond() (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		for j, addrAndMask := range ipAddr {
 			// 分离 IP 和子网掩码
 			addr := strings.Split(addrAndMask.String(), "/")[0]
@@ -113,9 +122,11 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 		if err != nil {
 			return
 		}
+
 		if err = common.MarshalAndSave(ncr, ConfDirectoryName+"/"+NetworkCardFileName); err != nil {
 			return
 		}
+
 		err = errors.New("请打开 " + ConfDirectoryName + "/" + NetworkCardFileName + " 选择网卡填入 " +
 			ConfDirectoryName + "/" + ConfFileName + " 的 network_card")
 		return
@@ -137,33 +148,34 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 				ipv4 = v
 			} else {
 				err = errors.New("IPv4 选择了不存在的网卡")
+				return
 			}
 		} else {
 			// 使用 API 获取 IPv4
 			if apiUrl.IPv4 == "" {
 				apiUrl.IPv4 = common.DefaultAPIUrl
 			}
+
 			var resp *http.Response
 			resp, err = http.Get(apiUrl.IPv4)
 			if err != nil {
 				return
 			}
-			defer func(Body io.ReadCloser) {
-				if t := Body.Close(); t != nil {
-					err = t
-				}
-			}(resp.Body)
+			defer resp.Body.Close()
+
 			var respJson []byte
 			respJson, err = io.ReadAll(resp.Body)
 			if err != nil {
 				return
 			}
+
 			var ipInfo common.GetIPResp
 			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
 				return
 			}
 			ipv4 = ipInfo.IP
 		}
+
 		if strings.Contains(ipv4, ":") {
 			err = errors.New("获取到的 IPv4 格式错误，意外获取到了 " + ipv4)
 			ipv4 = ""
@@ -178,33 +190,34 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 				ipv6 = v
 			} else {
 				err = errors.New("IPv6 选择了不存在的网卡")
+				return
 			}
 		} else {
 			// 使用 API 获取 IPv4
 			if apiUrl.IPv6 == "" {
 				apiUrl.IPv6 = common.DefaultIPv6APIUrl
 			}
+
 			var resp *http.Response
 			resp, err = http.Get(apiUrl.IPv6)
 			if err != nil {
 				return
 			}
-			defer func(Body io.ReadCloser) {
-				if t := Body.Close(); t != nil {
-					err = t
-				}
-			}(resp.Body)
+			defer resp.Body.Close()
+
 			var respJson []byte
 			respJson, err = io.ReadAll(resp.Body)
 			if err != nil {
 				return
 			}
+
 			var ipInfo common.GetIPResp
 			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
 				return
 			}
 			ipv6 = ipInfo.IP
 		}
+
 		if strings.Contains(ipv6, ":") {
 			ipv6 = common.ExpandIPv6Zero(ipv6)
 		} else {

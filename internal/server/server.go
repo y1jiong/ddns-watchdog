@@ -45,6 +45,7 @@ func (conf *server) InitConf() (msg string, err error) {
 	if err = common.MarshalAndSave(conf, ConfDirectoryName+"/"+ConfFileName); err != nil {
 		return
 	}
+
 	return "初始化 " + ConfDirectoryName + "/" + ConfFileName, nil
 }
 
@@ -58,22 +59,22 @@ func (conf *server) GetLatestVersion() (str string) {
 		if err != nil {
 			return "N/A (请检查网络连接)"
 		}
-		defer func(Body io.ReadCloser) {
-			if err = Body.Close(); err != nil {
-				str = err.Error()
-			}
-		}(resp.Body)
+		defer resp.Body.Close()
+
 		respJson, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "N/A (数据包错误)"
 		}
+
 		var res common.GetIPResp
 		if err = json.Unmarshal(respJson, &res); err != nil {
 			return "N/A (数据包错误)"
 		}
+
 		if res.Version == "" {
 			return "N/A (没有获取到版本信息)"
 		}
+
 		return res.Version
 	}
 	return common.LocalVersion
@@ -82,10 +83,11 @@ func (conf *server) GetLatestVersion() (str string) {
 func (conf *server) CheckLatestVersion() {
 	if !conf.IsRootServer {
 		common.VersionTips(conf.GetLatestVersion())
-	} else {
-		fmt.Println("本机是根服务器")
-		fmt.Println("当前版本", common.LocalVersion)
-		fmt.Println("Git Commit:", common.GitCommit)
-		fmt.Println("Build Time:", common.BuildTime)
+		return
 	}
+
+	fmt.Println("本机是根服务器")
+	fmt.Println("当前版本", common.LocalVersion)
+	fmt.Println("Git Commit:", common.GitCommit)
+	fmt.Println("Build Time:", common.BuildTime)
 }

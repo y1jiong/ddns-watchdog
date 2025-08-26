@@ -92,6 +92,7 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 	if err != nil {
 		return
 	}
+
 	hhc, err := dns.DnsClientBuilder().
 		WithRegion(hr).
 		WithCredential(auth).
@@ -99,10 +100,9 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 	if err != nil {
 		return
 	}
-	dnsClient := dns.NewDnsClient(hhc)
 
 	request := &model.ListPublicZonesRequest{}
-	response, err := dnsClient.ListPublicZones(request)
+	response, err := dns.NewDnsClient(hhc).ListPublicZones(request)
 	if err != nil {
 		return
 	}
@@ -130,6 +130,7 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 	if err != nil {
 		return
 	}
+
 	hhc, err := dns.DnsClientBuilder().
 		WithRegion(hr).
 		WithCredential(auth).
@@ -137,14 +138,15 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 	if err != nil {
 		return
 	}
-	dnsClient := dns.NewDnsClient(hhc)
 
 	request := &model.ListRecordSetsByZoneRequest{}
 	request.ZoneId = hc.ZoneId
-	response, err := dnsClient.ListRecordSetsByZone(request)
+
+	response, err := dns.NewDnsClient(hhc).ListRecordSetsByZone(request)
 	if err != nil {
 		return
 	}
+
 	for _, v := range *response.Recordsets {
 		if *v.Name == domain && *v.Type == recordType {
 			recordSetId = *v.Id
@@ -154,6 +156,7 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 			break
 		}
 	}
+
 	if recordSetId == "" || recordIP == "" {
 		err = errors.New("HuaweiCloud: " + domain + " 的 " + recordType + " 解析记录不存在")
 	}
@@ -173,6 +176,7 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 	if err != nil {
 		return
 	}
+
 	hhc, err := dns.DnsClientBuilder().
 		WithRegion(hr).
 		WithCredential(auth).
@@ -180,7 +184,6 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 	if err != nil {
 		return
 	}
-	dnsClient := dns.NewDnsClient(hhc)
 
 	request := &model.UpdateRecordSetRequest{}
 	request.ZoneId = hc.ZoneId
@@ -191,6 +194,7 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 		Type:    &recordType,
 		Name:    &domain,
 	}
-	_, err = dnsClient.UpdateRecordSet(request)
+
+	_, err = dns.NewDnsClient(hhc).UpdateRecordSet(request)
 	return
 }

@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 )
 
@@ -34,6 +35,7 @@ func (ad *AliDNS) LoadConf() (err error) {
 	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+AliDNSConfFileName, &ad); err != nil {
 		return
 	}
+
 	if ad.AccessKeyId == "" || ad.AccessKeySecret == "" || ad.Domain == "" || (ad.SubDomain.A == "" && ad.SubDomain.AAAA == "") {
 		return errors.New("请打开配置文件 " + ConfDirectoryName + "/" + AliDNSConfFileName + " 检查你的 access_key_id, access_key_secret, domain, sub_domain 并重新启动")
 	}
@@ -80,7 +82,6 @@ func (ad *AliDNS) getParseRecord(subDomain, recordType string) (recordId, record
 
 	request := alidns.CreateDescribeDomainRecordsRequest()
 	request.Scheme = "https"
-
 	request.DomainName = ad.Domain
 
 	response, err := dnsClient.DescribeDomainRecords(request)
@@ -96,6 +97,7 @@ func (ad *AliDNS) getParseRecord(subDomain, recordType string) (recordId, record
 			break
 		}
 	}
+
 	if recordId == "" || recordIP == "" {
 		err = errors.New("AliDNS: " + subDomain + "." + ad.Domain + " 的 " + recordType + " 解析记录不存在")
 	}
@@ -110,15 +112,11 @@ func (ad *AliDNS) updateParseRecord(ipAddr, recordId, recordType, subDomain stri
 
 	request := alidns.CreateUpdateDomainRecordRequest()
 	request.Scheme = "https"
-
 	request.RecordId = recordId
 	request.RR = subDomain
 	request.Type = recordType
 	request.Value = ipAddr
 
 	_, err = dnsClient.UpdateDomainRecord(request)
-	if err != nil {
-		return
-	}
 	return
 }

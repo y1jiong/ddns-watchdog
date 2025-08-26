@@ -49,9 +49,6 @@ func DelFromWhitelist(token string) (msg string, err error) {
 	} else {
 		msg = fmt.Sprintf("%v does not exist.\n", token)
 	}
-	if err != nil {
-		return
-	}
 	return
 }
 
@@ -144,6 +141,7 @@ func InitWhitelist() (msg string, err error) {
 	if err = common.MarshalAndSave(whitelist, ConfDirectoryName+"/"+WhitelistFileName); err != nil {
 		return
 	}
+
 	return "初始化 " + ConfDirectoryName + "/" + WhitelistFileName, nil
 }
 
@@ -183,11 +181,13 @@ func Install() (err error) {
 	if common.IsWindows() {
 		return errors.New("windows 暂不支持安装到系统")
 	}
+
 	// 注册系统服务
 	wd, err := os.Getwd()
 	if err != nil {
 		return
 	}
+
 	serviceContent := []byte(
 		"[Unit]\n" +
 			"Description=" + RunningName + " Service\n" +
@@ -201,9 +201,11 @@ func Install() (err error) {
 			"[Install]\n" +
 			"WantedBy=multi-user.target\n",
 	)
+
 	if err = os.WriteFile(InstallPath, serviceContent, 0600); err != nil {
 		return
 	}
+
 	log.Println("可以使用 systemctl 控制", RunningName, "服务了")
 	return
 }
@@ -212,13 +214,16 @@ func Uninstall() (err error) {
 	if common.IsWindows() {
 		return errors.New("windows 暂不支持安装到系统")
 	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return
 	}
+
 	if err = os.Remove(InstallPath); err != nil {
 		return
 	}
+
 	log.Println("卸载服务成功")
 	log.Println("若要完全删除，请移步到", wd, "和", ConfDirectoryName, "完全删除")
 	return

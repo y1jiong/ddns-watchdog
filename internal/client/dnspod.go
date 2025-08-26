@@ -38,6 +38,7 @@ func (dpc *DNSPod) LoadConf() (err error) {
 	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+DNSPodConfFileName, &dpc); err != nil {
 		return
 	}
+
 	if dpc.ID == "" || dpc.Token == "" || dpc.Domain == "" || (dpc.SubDomain.A == "" && dpc.SubDomain.AAAA == "") {
 		return errors.New("请打开配置文件 " + ConfDirectoryName + "/" + DNSPodConfFileName + " 检查你的 id, token, domain, sub_domain 并重新启动")
 	}
@@ -87,6 +88,7 @@ func checkRespondStatus(jsonObj *simplejson.Json) (err error) {
 func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recordLineId, recordIP string, err error) {
 	postContent := dpc.publicRequestInit()
 	postContent = postContent + "&" + dpc.recordRequestInit(subDomain)
+
 	respJson, err := postman("https://dnsapi.cn/Record.List", postContent)
 	if err != nil {
 		return
@@ -96,14 +98,17 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 	if err != nil {
 		return
 	}
+
 	if err = checkRespondStatus(jsonObj); err != nil {
 		return
 	}
+
 	records, err := jsonObj.Get("records").Array()
 	if len(records) == 0 {
 		err = errors.New("DNSPod: " + subDomain + "." + dpc.Domain + " 解析记录不存在")
 		return
 	}
+
 	for _, value := range records {
 		element := value.(map[string]any)
 		if element["name"].(string) == subDomain && element["type"].(string) == recordType {
@@ -113,6 +118,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 			break
 		}
 	}
+
 	if recordId == "" || recordIP == "" || recordLineId == "" {
 		err = errors.New("DNSPod: " + subDomain + "." + dpc.Domain + " 的 " + recordType + " 解析记录不存在")
 	}
@@ -122,6 +128,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 func (dpc *DNSPod) updateParseRecord(ipAddr, recordId, recordLineId, recordType, subDomain string) (err error) {
 	postContent := dpc.publicRequestInit()
 	postContent = postContent + "&" + dpc.recordModifyRequestInit(ipAddr, recordId, recordLineId, recordType, subDomain)
+
 	respJson, err := postman("https://dnsapi.cn/Record.Modify", postContent)
 	if err != nil {
 		return
@@ -131,10 +138,8 @@ func (dpc *DNSPod) updateParseRecord(ipAddr, recordId, recordLineId, recordType,
 	if err != nil {
 		return
 	}
-	if err = checkRespondStatus(jsonObj); err != nil {
-		return
-	}
-	return
+
+	return checkRespondStatus(jsonObj)
 }
 
 func (dpc *DNSPod) publicRequestInit() (pp string) {
@@ -151,41 +156,29 @@ func (dpc *DNSPod) recordRequestInit(subDomain string) (rr string) {
 	return
 }
 
-func (dpc *DNSPod) recordModifyRequestInit(ipAddr, recordId, recordLineId, recordType, subDomain string) (rm string) {
-	rm = "domain=" + dpc.Domain +
+func (dpc *DNSPod) recordModifyRequestInit(ipAddr, recordId, recordLineId, recordType, subDomain string) string {
+	return "domain=" + dpc.Domain +
 		"&record_id=" + recordId +
 		"&sub_domain=" + subDomain +
 		"&record_type=" + recordType +
 		"&record_line_id=" + recordLineId +
 		"&value=" + ipAddr
-	return
 }
 
 func postman(url, src string) (dst []byte, err error) {
-	httpClient := getGeneralHttpClient()
-	req, err := http.NewRequest("POST", url, strings.NewReader(src))
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(src))
 	if err != nil {
 		return nil, err
 	}
-	defer func(Body io.ReadCloser) {
-		if t := Body.Close(); t != nil {
-			err = t
-		}
-	}(req.Body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", ProjName+"/"+common.LocalVersion+" ()")
-	resp, err := httpClient.Do(req)
+
+	resp, err := getGeneralHttpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer func(Body io.ReadCloser) {
-		if t := Body.Close(); t != nil {
-			err = t
-		}
-	}(resp.Body)
-	dst, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }

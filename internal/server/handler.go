@@ -21,6 +21,7 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 		IP:      GetClientIP(req),
 		Version: Srv.GetLatestVersion(),
 	}
+
 	sendJson, err := json.Marshal(info)
 	if err != nil {
 		log.Println(err)
@@ -29,6 +30,7 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
 	_, err = w.Write(sendJson)
 	if err != nil {
 		log.Println(err)
@@ -53,6 +55,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	var body common.CenterReq
 	if err = json.Unmarshal(bodyJson, &body); err != nil {
 		log.Println(err)
@@ -65,6 +68,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+
 	if v, ok := whitelist[body.Token]; ok {
 		if !v.Enable {
 			w.WriteHeader(http.StatusForbidden)
@@ -80,6 +84,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		return
 	}
+
 	if httpStatus != http.StatusOK {
 		if httpStatus == http.StatusInternalServerError {
 			log.Println(err)
@@ -87,6 +92,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(httpStatus)
 		return
 	}
+
 	respJson, err := json.Marshal(respBody)
 	if err != nil {
 		log.Println(err)
@@ -95,6 +101,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
 	_, err = w.Write(respJson)
 	if err != nil {
 		log.Println(err)

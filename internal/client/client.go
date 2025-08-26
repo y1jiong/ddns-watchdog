@@ -63,10 +63,12 @@ func (conf *client) LoadConf() (err error) {
 	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+ConfFileName, &conf); err != nil {
 		return
 	}
+
 	// 检查启用 IP 类型
 	if !conf.Enable.IPv4 && !conf.Enable.IPv6 {
 		return errors.New("请打开客户端配置文件 " + ConfDirectoryName + "/" + ConfFileName + " 启用需要使用的 IP 类型并重新启动")
 	}
+
 	// 检查启用服务
 	if !conf.Center.Enable &&
 		!conf.Services.DNSPod &&
@@ -83,15 +85,13 @@ func (conf *client) GetLatestVersion() (str string) {
 	if err != nil {
 		return "N/A (请检查网络连接)"
 	}
-	defer func(Body io.ReadCloser) {
-		if t := Body.Close(); t != nil {
-			str = t.Error()
-		}
-	}(resp.Body)
+	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "N/A (数据包错误)"
 	}
+
 	var res common.GetIPResp
 	if err = json.Unmarshal(body, &res); err != nil {
 		return "N/A (数据包错误)"
@@ -99,6 +99,7 @@ func (conf *client) GetLatestVersion() (str string) {
 	if res.Version == "" {
 		return "N/A (没有获取到版本信息)"
 	}
+
 	return res.Version
 }
 

@@ -49,20 +49,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 周期循环
+	// 一次性
 	if client.Client.CheckCycleMinutes <= 0 {
 		check()
-	} else {
-		cycle := time.NewTicker(time.Duration(client.Client.CheckCycleMinutes) * time.Minute)
-		for {
-			check()
-			<-cycle.C
-		}
+		return
+	}
+
+	// 周期循环
+	cycle := time.NewTicker(time.Duration(client.Client.CheckCycleMinutes) * time.Minute)
+	for {
+		check()
+		<-cycle.C
 	}
 }
 
 func processFlag() (exit bool, err error) {
 	flag.Parse()
+
 	// 打印网卡信息
 	if *printNetworkCardInfo {
 		var ncr map[string]string
@@ -70,11 +73,13 @@ func processFlag() (exit bool, err error) {
 		if err != nil {
 			return
 		}
+
 		var arr []string
 		for key := range ncr {
 			arr = append(arr, key)
 		}
 		sort.Strings(arr)
+
 		for _, key := range arr {
 			fmt.Printf("%v\n\t%v\n", key, ncr[key])
 		}
@@ -119,7 +124,7 @@ func processFlag() (exit bool, err error) {
 }
 
 func initConf(event string) (err error) {
-	msg := ""
+	var msg string
 	switch event {
 	case "0":
 		msg, err = client.Client.InitConf()
@@ -137,31 +142,34 @@ func initConf(event string) (err error) {
 	if err != nil {
 		return
 	}
+
 	log.Println(msg)
 	return
 }
 
 func loadConf() (err error) {
-	if !client.Client.Center.Enable {
-		if client.Client.Services.DNSPod {
-			if err = client.DP.LoadConf(); err != nil {
-				return
-			}
+	if client.Client.Center.Enable {
+		return
+	}
+
+	if client.Client.Services.DNSPod {
+		if err = client.DP.LoadConf(); err != nil {
+			return
 		}
-		if client.Client.Services.AliDNS {
-			if err = client.AD.LoadConf(); err != nil {
-				return
-			}
+	}
+	if client.Client.Services.AliDNS {
+		if err = client.AD.LoadConf(); err != nil {
+			return
 		}
-		if client.Client.Services.Cloudflare {
-			if err = client.Cf.LoadConf(); err != nil {
-				return
-			}
+	}
+	if client.Client.Services.Cloudflare {
+		if err = client.Cf.LoadConf(); err != nil {
+			return
 		}
-		if client.Client.Services.HuaweiCloud {
-			if err = client.HC.LoadConf(); err != nil {
-				return
-			}
+	}
+	if client.Client.Services.HuaweiCloud {
+		if err = client.HC.LoadConf(); err != nil {
+			return
 		}
 	}
 	return
@@ -177,32 +185,36 @@ func check() {
 		}
 	}
 
+	if ipv4 == client.Client.LatestIPv4 && ipv6 == client.Client.LatestIPv6 && !*enforcement {
+		return
+	}
+
 	// 进入更新流程
-	if ipv4 != client.Client.LatestIPv4 || ipv6 != client.Client.LatestIPv6 || *enforcement {
-		if ipv4 != client.Client.LatestIPv4 {
-			client.Client.LatestIPv4 = ipv4
-		}
-		if ipv6 != client.Client.LatestIPv6 {
-			client.Client.LatestIPv6 = ipv6
-		}
-		wg := sync.WaitGroup{}
-		if client.Client.Center.Enable {
-			accessCenter(ipv4, ipv6)
-		} else {
-			if client.Client.Services.DNSPod {
-				wg.Go(func() { serviceInterface(ipv4, ipv6, client.DP.Run) })
-			}
-			if client.Client.Services.AliDNS {
-				wg.Go(func() { serviceInterface(ipv4, ipv6, client.AD.Run) })
-			}
-			if client.Client.Services.Cloudflare {
-				wg.Go(func() { serviceInterface(ipv4, ipv6, client.Cf.Run) })
-			}
-			if client.Client.Services.HuaweiCloud {
-				wg.Go(func() { serviceInterface(ipv4, ipv6, client.HC.Run) })
-			}
-		}
-		wg.Wait()
+	if ipv4 != client.Client.LatestIPv4 {
+		client.Client.LatestIPv4 = ipv4
+	}
+	if ipv6 != client.Client.LatestIPv6 {
+		client.Client.LatestIPv6 = ipv6
+	}
+
+	if client.Client.Center.Enable {
+		accessCenter(ipv4, ipv6)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+	if client.Client.Services.DNSPod {
+		wg.Go(func() { serviceInterface(ipv4, ipv6, client.DP.Run) })
+	}
+	if client.Client.Services.AliDNS {
+		wg.Go(func() { serviceInterface(ipv4, ipv6, client.AD.Run) })
+	}
+	if client.Client.Services.Cloudflare {
+		wg.Go(func() { serviceInterface(ipv4, ipv6, client.Cf.Run) })
+	}
+	if client.Client.Services.HuaweiCloud {
+		wg.Go(func() { serviceInterface(ipv4, ipv6, client.HC.Run) })
 	}
 }
 
@@ -235,6 +247,7 @@ func accessCenter(ipv4, ipv6 string) {
 			IPv6: ipv6,
 		},
 	}
+
 	reqJson, err := json.Marshal(reqBody)
 	if err != nil {
 		log.Println(err)
@@ -247,36 +260,36 @@ func accessCenter(ipv4, ipv6 string) {
 		log.Println(err)
 		return
 	}
+
 	resp, err := hc.Do(req)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		if t := Body.Close(); t != nil {
-			err = t
-		}
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	// 处理结果
 	if resp.StatusCode != http.StatusOK {
 		log.Println("The status code returned by the center is", resp.StatusCode)
 	}
+
 	respBodyJson, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	if len(respBodyJson) > 0 {
-		var respBody common.GeneralResp
-		if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
-			log.Println(err)
-			return
-		}
-		for _, v := range strings.Split(respBody.Message, "\n") {
-			if v != "" {
-				log.Println(v)
-			}
+	if len(respBodyJson) == 0 {
+		return
+	}
+
+	var respBody common.GeneralResp
+	if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
+		log.Println(err)
+		return
+	}
+	for _, v := range strings.Split(respBody.Message, "\n") {
+		if v != "" {
+			log.Println(v)
 		}
 	}
 }

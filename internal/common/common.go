@@ -95,28 +95,26 @@ func LoadAndUnmarshal(filePath string, dst any) (err error) {
 	if err != nil {
 		return
 	}
+
 	jsonContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return
 	}
-	if err = json.Unmarshal(jsonContent, &dst); err != nil {
-		return
-	}
-	return
+
+	return json.Unmarshal(jsonContent, &dst)
 }
 
 func MarshalAndSave(content any, filePath string) (err error) {
 	if err = IsDirExistAndCreate(filepath.Dir(filePath)); err != nil {
 		return
 	}
+
 	jsonContent, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
 		return
 	}
-	if err = os.WriteFile(filePath, jsonContent, 0600); err != nil {
-		return
-	}
-	return nil
+
+	return os.WriteFile(filePath, jsonContent, 0600)
 }
 
 func CompareVersionString(remoteVersion, localVersion string) bool {

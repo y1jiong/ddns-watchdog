@@ -57,6 +57,7 @@ func (conf *service) InitConf() (msg string, err error) {
 	if err = common.MarshalAndSave(conf, ConfDirectoryName+"/"+ServiceConfFileName); err != nil {
 		return
 	}
+
 	return "初始化 " + ConfDirectoryName + "/" + ServiceConfFileName, nil
 }
 

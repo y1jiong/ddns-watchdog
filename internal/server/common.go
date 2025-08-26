@@ -30,8 +30,10 @@ type whitelistStruct struct {
 
 func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatus int, respBody common.GeneralResp, err error) {
 	httpStatus = http.StatusOK
-	var msg []string
-	var errs []error
+	var (
+		msg  []string
+		errs []error
+	)
 
 	switch instance.Service {
 	case common.DNSPod:
