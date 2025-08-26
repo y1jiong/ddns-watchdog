@@ -185,9 +185,7 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 	request := &model.UpdateRecordSetRequest{}
 	request.ZoneId = hc.ZoneId
 	request.RecordsetId = recordSetId
-	var listRecordsBody = []string{
-		ipAddr,
-	}
+	listRecordsBody := []string{ipAddr}
 	request.Body = &model.UpdateRecordSetReq{
 		Records: &listRecordsBody,
 		Type:    &recordType,

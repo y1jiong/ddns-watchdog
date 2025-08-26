@@ -27,8 +27,8 @@ var (
 	HC                = HuaweiCloud{}
 )
 
-// AsyncServiceCallback 异步服务回调函数类型
-type AsyncServiceCallback func(enabledServices common.Enable, ipv4, ipv6 string) (msg []string, errs []error)
+// ServiceCallback 服务回调函数类型
+type ServiceCallback func(enabledServices common.Enable, ipv4, ipv6 string) (msg []string, errs []error)
 
 func Install() (err error) {
 	if common.IsWindows() {
@@ -153,13 +153,13 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 					err = t
 				}
 			}(resp.Body)
-			var recvJson []byte
-			recvJson, err = io.ReadAll(resp.Body)
+			var respJson []byte
+			respJson, err = io.ReadAll(resp.Body)
 			if err != nil {
 				return
 			}
 			var ipInfo common.GetIPResp
-			if err = json.Unmarshal(recvJson, &ipInfo); err != nil {
+			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
 				return
 			}
 			ipv4 = ipInfo.IP
@@ -194,13 +194,13 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 					err = t
 				}
 			}(resp.Body)
-			var recvJson []byte
-			recvJson, err = io.ReadAll(resp.Body)
+			var respJson []byte
+			respJson, err = io.ReadAll(resp.Body)
 			if err != nil {
 				return
 			}
 			var ipInfo common.GetIPResp
-			if err = json.Unmarshal(recvJson, &ipInfo); err != nil {
+			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
 				return
 			}
 			ipv6 = ipInfo.IP

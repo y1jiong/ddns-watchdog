@@ -13,14 +13,14 @@ jobs:
 #    if:
     steps:
       - name: Load repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.25"
 
       - name: Test
         run: go test ./...

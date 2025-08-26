@@ -63,18 +63,18 @@ func (conf *server) GetLatestVersion() (str string) {
 				str = err.Error()
 			}
 		}(resp.Body)
-		recvJson, err := io.ReadAll(resp.Body)
+		respJson, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "N/A (数据包错误)"
 		}
-		var recv = common.GetIPResp{}
-		if err = json.Unmarshal(recvJson, &recv); err != nil {
+		var res common.GetIPResp
+		if err = json.Unmarshal(respJson, &res); err != nil {
 			return "N/A (数据包错误)"
 		}
-		if recv.Version == "" {
+		if res.Version == "" {
 			return "N/A (没有获取到版本信息)"
 		}
-		return recv.Version
+		return res.Version
 	}
 	return common.LocalVersion
 }

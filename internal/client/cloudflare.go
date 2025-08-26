@@ -4,10 +4,11 @@ import (
 	"ddns-watchdog/internal/common"
 	"encoding/json"
 	"errors"
-	"github.com/bitly/go-simplejson"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/bitly/go-simplejson"
 )
 
 const CloudflareConfFileName = "cloudflare.json"
@@ -101,12 +102,12 @@ func (cfc *Cloudflare) getParseRecord(domain, recordType string) (domainId, reco
 			err = t
 		}
 	}(resp.Body)
-	recvJson, err := io.ReadAll(resp.Body)
+	respJson, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	jsonObj, err := simplejson.NewJson(recvJson)
+	jsonObj, err := simplejson.NewJson(respJson)
 	if err != nil {
 		return
 	}
@@ -168,12 +169,12 @@ func (cfc *Cloudflare) updateParseRecord(ipAddr, domainId, recordType, domain st
 			err = t
 		}
 	}(resp.Body)
-	recvJson, err := io.ReadAll(resp.Body)
+	respJson, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	jsonObj, err := simplejson.NewJson(recvJson)
+	jsonObj, err := simplejson.NewJson(respJson)
 	if err != nil {
 		return
 	}

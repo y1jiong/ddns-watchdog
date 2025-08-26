@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	flag "github.com/spf13/pflag"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	flag "github.com/spf13/pflag"
 )
 
 var (
@@ -184,33 +185,28 @@ func check() {
 		if ipv6 != client.Client.LatestIPv6 {
 			client.Client.LatestIPv6 = ipv6
 		}
-		var wg = sync.WaitGroup{}
+		wg := sync.WaitGroup{}
 		if client.Client.Center.Enable {
 			accessCenter(ipv4, ipv6)
 		} else {
 			if client.Client.Services.DNSPod {
-				wg.Add(1)
-				go asyncServiceInterface(ipv4, ipv6, client.DP.Run, &wg)
+				wg.Go(func() { serviceInterface(ipv4, ipv6, client.DP.Run) })
 			}
 			if client.Client.Services.AliDNS {
-				wg.Add(1)
-				go asyncServiceInterface(ipv4, ipv6, client.AD.Run, &wg)
+				wg.Go(func() { serviceInterface(ipv4, ipv6, client.AD.Run) })
 			}
 			if client.Client.Services.Cloudflare {
-				wg.Add(1)
-				go asyncServiceInterface(ipv4, ipv6, client.Cf.Run, &wg)
+				wg.Go(func() { serviceInterface(ipv4, ipv6, client.Cf.Run) })
 			}
 			if client.Client.Services.HuaweiCloud {
-				wg.Add(1)
-				go asyncServiceInterface(ipv4, ipv6, client.HC.Run, &wg)
+				wg.Go(func() { serviceInterface(ipv4, ipv6, client.HC.Run) })
 			}
 		}
 		wg.Wait()
 	}
 }
 
-func asyncServiceInterface(ipv4, ipv6 string, callback client.AsyncServiceCallback, wg *sync.WaitGroup) {
-	defer wg.Done()
+func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) {
 	msg, err := callback(client.Client.Enable, ipv4, ipv6)
 	for _, row := range err {
 		log.Println(row)
@@ -272,7 +268,7 @@ func accessCenter(ipv4, ipv6 string) {
 		return
 	}
 	if len(respBodyJson) > 0 {
-		var respBody = common.GeneralResp{}
+		var respBody common.GeneralResp
 		if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
 			log.Println(err)
 			return

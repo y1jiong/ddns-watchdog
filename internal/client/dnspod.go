@@ -3,10 +3,11 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
-	"github.com/bitly/go-simplejson"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/bitly/go-simplejson"
 )
 
 const DNSPodConfFileName = "dnspod.json"
@@ -86,12 +87,12 @@ func checkRespondStatus(jsonObj *simplejson.Json) (err error) {
 func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recordLineId, recordIP string, err error) {
 	postContent := dpc.publicRequestInit()
 	postContent = postContent + "&" + dpc.recordRequestInit(subDomain)
-	recvJson, err := postman("https://dnsapi.cn/Record.List", postContent)
+	respJson, err := postman("https://dnsapi.cn/Record.List", postContent)
 	if err != nil {
 		return
 	}
 
-	jsonObj, err := simplejson.NewJson(recvJson)
+	jsonObj, err := simplejson.NewJson(respJson)
 	if err != nil {
 		return
 	}
@@ -121,12 +122,12 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 func (dpc *DNSPod) updateParseRecord(ipAddr, recordId, recordLineId, recordType, subDomain string) (err error) {
 	postContent := dpc.publicRequestInit()
 	postContent = postContent + "&" + dpc.recordModifyRequestInit(ipAddr, recordId, recordLineId, recordType, subDomain)
-	recvJson, err := postman("https://dnsapi.cn/Record.Modify", postContent)
+	respJson, err := postman("https://dnsapi.cn/Record.Modify", postContent)
 	if err != nil {
 		return
 	}
 
-	jsonObj, err := simplejson.NewJson(recvJson)
+	jsonObj, err := simplejson.NewJson(respJson)
 	if err != nil {
 		return
 	}
