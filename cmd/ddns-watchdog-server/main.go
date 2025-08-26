@@ -135,9 +135,7 @@ func processFlag() (exit bool, err error) {
 
 	// 添加 token 到白名单
 	if *add {
-		var status string
-		m := *message
-		if len(m) > 32 {
+		if len(*message) > 32 {
 			err = errors.New("token message 备注信息过长")
 			return
 		}
@@ -146,10 +144,7 @@ func processFlag() (exit bool, err error) {
 			return
 		}
 
-		if m == "" {
-			m = "undefined"
-		}
-
+		var status string
 		status, err = server.AddToWhitelist(currentToken, *message, *service, *domain, *a, *aaaa)
 		if err != nil {
 			return
@@ -159,9 +154,9 @@ func processFlag() (exit bool, err error) {
 
 		switch status {
 		case server.InsertSign:
-			fmt.Printf("Added %v(%v) to whitelist.\n", m, currentToken)
+			fmt.Printf("Added %v(%v) to whitelist.\n", *message, currentToken)
 		case server.UpdateSign:
-			fmt.Printf("Updated %v(%v) in whitelist.\n", m, currentToken)
+			fmt.Printf("Updated %v(%v) in whitelist.\n", *message, currentToken)
 		}
 	}
 
