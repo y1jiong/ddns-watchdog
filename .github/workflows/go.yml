@@ -25,11 +25,8 @@ jobs:
       - name: Test
         run: go test ./...
 
-      - name: Build client
-        run: make -f Makefile.client
-
-      - name: Build server
-        run: make -f Makefile.server
+      - name: Build
+        run: make
 
       - name: Upload release binaries
         uses: alexellis/upload-assets@0.4.1
