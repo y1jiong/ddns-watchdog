@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.165
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.166
 	github.com/spf13/pflag v1.0.7
 )
 

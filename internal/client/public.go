@@ -114,7 +114,46 @@ func NetworkCardRespond() (map[string]string, error) {
 	return networkCardInfo, nil
 }
 
-func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 string, err error) {
+func fallbackIPv6(ncr map[string]string, preferred string) (string, bool) {
+	// 直接匹配
+	if preferred != "" {
+		if v, ok := ncr[preferred]; ok && strings.Contains(v, ":") && net.ParseIP(v).IsGlobalUnicast() {
+			return v, true
+		}
+	}
+
+	// 尝试去掉末尾数字后匹配
+	ncs := strings.Split(preferred, " ")
+	if _, err := strconv.Atoi(ncs[len(ncs)-1]); err == nil {
+		preferred = strings.Join(ncs[:len(ncs)-1], " ")
+	}
+
+	// 尝试匹配类似 eth0 这种
+	if preferred != "" {
+		for i := 0; ; i++ {
+			v, ok := ncr[preferred+" "+strconv.Itoa(i)]
+			if !ok {
+				break
+			}
+			if !strings.Contains(v, ":") || !net.ParseIP(v).IsGlobalUnicast() {
+				continue
+			}
+			return v, true
+		}
+	}
+
+	// 随便找一个
+	for _, v := range ncr {
+		if !strings.Contains(v, ":") || !net.ParseIP(v).IsGlobalUnicast() {
+			continue
+		}
+		return v, true
+	}
+
+	return "", false
+}
+
+func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback bool) (ipv4, ipv6 string, err error) {
 	var ncr map[string]string
 	// 若需网卡信息，则获取网卡信息并提供给用户
 	if nc.Enable && nc.IPv4 == "" && nc.IPv6 == "" {
@@ -186,14 +225,23 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard) (ipv4, ipv6 
 	if enabled.IPv6 {
 		// 启用网卡 IPv6
 		if nc.Enable && nc.IPv6 != "" {
-			if v, ok := ncr[nc.IPv6]; ok {
+			var (
+				v  string
+				ok bool
+			)
+			if fallback {
+				v, ok = fallbackIPv6(ncr, nc.IPv6)
+			} else {
+				v, ok = ncr[nc.IPv6]
+			}
+			if ok {
 				ipv6 = v
 			} else {
 				err = errors.New("IPv6 选择了不存在的网卡")
 				return
 			}
 		} else {
-			// 使用 API 获取 IPv4
+			// 使用 API 获取 IPv6
 			if apiUrl.IPv6 == "" {
 				apiUrl.IPv6 = common.DefaultIPv6APIUrl
 			}

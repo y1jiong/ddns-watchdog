@@ -13,14 +13,15 @@ const (
 )
 
 type client struct {
-	APIUrl            apiUrl        `json:"api_url"`
-	Center            center        `json:"center"`
-	Enable            common.Enable `json:"enable"`
-	NetworkCard       networkCard   `json:"network_card"`
-	Services          service       `json:"services"`
-	CheckCycleMinutes int           `json:"check_cycle_minutes"`
-	LatestIPv4        string        `json:"-"`
-	LatestIPv6        string        `json:"-"`
+	APIUrl             apiUrl        `json:"api_url"`
+	Center             center        `json:"center"`
+	Enable             common.Enable `json:"enable"`
+	NetworkCard        networkCard   `json:"network_card"`
+	Services           service       `json:"services"`
+	EnableIPv6Fallback bool          `json:"enable_ipv6_fallback"`
+	CheckCycleMinutes  int           `json:"check_cycle_minutes"`
+	LatestIPv4         string        `json:"-"`
+	LatestIPv6         string        `json:"-"`
 }
 
 type apiUrl struct {
@@ -30,9 +31,9 @@ type apiUrl struct {
 }
 
 type center struct {
-	Enable bool   `json:"enable"`
 	APIUrl string `json:"api_url"`
 	Token  string `json:"token"`
+	Enable bool   `json:"enable"`
 }
 
 type networkCard struct {
@@ -53,6 +54,7 @@ func (conf *client) InitConf() (msg string, err error) {
 	conf.APIUrl.IPv4 = common.DefaultAPIUrl
 	conf.APIUrl.IPv6 = common.DefaultIPv6APIUrl
 	conf.APIUrl.Version = common.DefaultAPIUrl
+	conf.EnableIPv6Fallback = true
 	conf.CheckCycleMinutes = 0
 
 	return "初始化 " + ConfDirectoryName + "/" + ConfFileName,

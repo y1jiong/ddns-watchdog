@@ -177,7 +177,7 @@ func loadConf() (err error) {
 
 func check() {
 	// 获取 IP
-	ipv4, ipv6, err := client.GetOwnIP(client.Client.Enable, client.Client.APIUrl, client.Client.NetworkCard)
+	ipv4, ipv6, err := client.GetOwnIP(client.Client.Enable, client.Client.APIUrl, client.Client.NetworkCard, client.Client.EnableIPv6Fallback)
 	if err != nil {
 		log.Println(err)
 		if ipv4 == "" && ipv6 == "" {
