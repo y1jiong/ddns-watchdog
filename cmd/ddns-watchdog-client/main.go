@@ -1,18 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"crypto/tls"
 	"ddns-watchdog/internal/client"
 	"ddns-watchdog/internal/common"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -198,7 +192,7 @@ func check() {
 	}
 
 	if client.Client.Center.Enable {
-		accessCenter(ipv4, ipv6)
+		client.AccessCenter(ipv4, ipv6)
 		return
 	}
 
@@ -225,71 +219,5 @@ func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) {
 	}
 	for _, row := range msg {
 		log.Println(row)
-	}
-}
-
-func accessCenter(ipv4, ipv6 string) {
-	// 创建 http 客户端
-	hc := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		},
-	}
-
-	// 构造请求 body
-	reqBody := common.CenterReq{
-		Token:  client.Client.Center.Token,
-		Enable: client.Client.Enable,
-		IP: common.IPs{
-			IPv4: ipv4,
-			IPv6: ipv6,
-		},
-	}
-
-	reqJson, err := json.Marshal(reqBody)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// 发送请求
-	req, err := http.NewRequest(http.MethodPost, client.Client.Center.APIUrl, bytes.NewReader(reqJson))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	resp, err := hc.Do(req)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// 处理结果
-	if resp.StatusCode != http.StatusOK {
-		log.Println("The status code returned by the center is", resp.StatusCode)
-	}
-
-	respBodyJson, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	if len(respBodyJson) == 0 {
-		return
-	}
-
-	var respBody common.GeneralResp
-	if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
-		log.Println(err)
-		return
-	}
-	for _, v := range strings.Split(respBody.Message, "\n") {
-		if v != "" {
-			log.Println(v)
-		}
 	}
 }

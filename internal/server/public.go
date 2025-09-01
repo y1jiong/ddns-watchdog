@@ -13,12 +13,15 @@ import (
 )
 
 const (
-	RunningName       = "ddns-watchdog-server"
 	WhitelistFileName = "whitelist.json"
+
+	InsertSign = "INSERT"
+	UpdateSign = "UPDATE"
+	DeleteSign = "DELETE"
 )
 
 var (
-	InstallPath       = "/etc/systemd/system/" + RunningName + ".service"
+	InstallPath       = "/etc/systemd/system/" + projName + ".service"
 	ConfDirectoryName = "conf"
 	Srv               = server{}
 	Services          = service{}
@@ -190,12 +193,12 @@ func Install() (err error) {
 
 	serviceContent := []byte(
 		"[Unit]\n" +
-			"Description=" + RunningName + " Service\n" +
+			"Description=" + projName + " Service\n" +
 			"After=network-online.target\n\n" +
 			"[Service]\n" +
 			"Type=simple\n" +
 			"WorkingDirectory=" + wd +
-			"\nExecStart=" + wd + "/" + RunningName + " -c " + ConfDirectoryName +
+			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDirectoryName +
 			"\nRestart=on-failure\n" +
 			"RestartSec=2\n\n" +
 			"[Install]\n" +
@@ -206,7 +209,7 @@ func Install() (err error) {
 		return
 	}
 
-	log.Println("可以使用 systemctl 控制", RunningName, "服务了")
+	log.Println("可以使用 systemctl 控制", projName, "服务了")
 	return
 }
 

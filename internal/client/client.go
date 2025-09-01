@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
 )
 
-const (
-	ConfFileName = "client.json"
-)
+const ConfFileName = "client.json"
 
 type client struct {
 	APIUrl             apiUrl        `json:"api_url"`
@@ -83,7 +80,7 @@ func (conf *client) LoadConf() (err error) {
 }
 
 func (conf *client) GetLatestVersion() (str string) {
-	resp, err := http.Get(conf.APIUrl.Version)
+	resp, err := httpGet(conf.APIUrl.Version)
 	if err != nil {
 		return "N/A (请检查网络连接)"
 	}

@@ -63,13 +63,15 @@ func main() {
 	// 设置超时参数和最低 TLS 版本
 	httpSrv := http.Server{
 		Addr:              server.Srv.ServerAddr,
-		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
 		WriteTimeout:      5 * time.Second,
 		IdleTimeout:       2 * time.Second,
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		},
 	}
+	httpSrv.SetKeepAlivesEnabled(false)
 
 	// 启动监听
 	if server.Srv.TLS.Enable {

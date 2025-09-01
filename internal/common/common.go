@@ -1,18 +1,21 @@
 package common
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
-	LocalVersion      = "1.6.1"
+	Version           = "1.6.1"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
 	ProjectUrl        = "https://github.com/y1jiong/ddns-watchdog"
@@ -22,6 +25,20 @@ var (
 	GitCommit = ""
 	BuildTime = ""
 )
+
+var DefaultHttpClient = newHttpClient()
+
+func newHttpClient() *http.Client {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.TLSClientConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+	t.DisableKeepAlives = true
+	return &http.Client{
+		Transport: t,
+		Timeout:   30 * time.Second,
+	}
+}
 
 // 内容应全小写
 const (
@@ -171,7 +188,7 @@ func ExpandIPv6Zero(ip string) string {
 }
 
 func VersionTips(LatestVersion string) {
-	fmt.Println("当前版本", LocalVersion)
+	fmt.Println("当前版本", Version)
 	fmt.Println("最新版本", LatestVersion)
 	fmt.Println("项目地址", ProjectUrl)
 	fmt.Println("Git Commit:", GitCommit)
@@ -179,7 +196,7 @@ func VersionTips(LatestVersion string) {
 	switch {
 	case strings.Contains(LatestVersion, "N/A"):
 		fmt.Println("\n" + LatestVersion + "\n需要手动检查更新，请前往 项目地址 查看")
-	case CompareVersionString(LatestVersion, LocalVersion):
+	case CompareVersionString(LatestVersion, Version):
 		fmt.Println("\n发现新版本，请前往 项目地址 下载")
 	}
 }

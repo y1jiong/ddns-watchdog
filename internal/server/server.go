@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 )
 
-const (
-	ConfFileName = "server.json"
-)
+const ConfFileName = "server.json"
 
 type server struct {
 	ServerAddr    string `json:"server_addr"`
@@ -55,7 +52,7 @@ func (conf *server) LoadConf() (err error) {
 
 func (conf *server) GetLatestVersion() (str string) {
 	if !conf.IsRootServer {
-		resp, err := http.Get(conf.RootServerUrl)
+		resp, err := httpGet(conf.RootServerUrl)
 		if err != nil {
 			return "N/A (请检查网络连接)"
 		}
@@ -77,7 +74,7 @@ func (conf *server) GetLatestVersion() (str string) {
 
 		return res.Version
 	}
-	return common.LocalVersion
+	return common.Version
 }
 
 func (conf *server) CheckLatestVersion() {
@@ -87,7 +84,7 @@ func (conf *server) CheckLatestVersion() {
 	}
 
 	fmt.Println("本机是根服务器")
-	fmt.Println("当前版本", common.LocalVersion)
+	fmt.Println("当前版本", common.Version)
 	fmt.Println("Git Commit:", common.GitCommit)
 	fmt.Println("Build Time:", common.BuildTime)
 }

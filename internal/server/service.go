@@ -4,9 +4,7 @@ import (
 	"ddns-watchdog/internal/common"
 )
 
-const (
-	ServiceConfFileName = "services.json"
-)
+const ServiceConfFileName = "services.json"
 
 type service struct {
 	DNSPod      dnspod      `json:"dnspod"`
@@ -40,20 +38,7 @@ type huaweiCloud struct {
 }
 
 func (conf *service) InitConf() (msg string, err error) {
-	*conf = service{
-		DNSPod: dnspod{
-			ID:    "",
-			Token: "",
-		},
-		AliDNS: alidns{
-			AccessKeyId:     "",
-			AccessKeySecret: "",
-		},
-		Cloudflare: cloudflare{
-			ZoneID:   "",
-			APIToken: "",
-		},
-	}
+	*conf = service{}
 	if err = common.MarshalAndSave(conf, ConfDirectoryName+"/"+ServiceConfFileName); err != nil {
 		return
 	}

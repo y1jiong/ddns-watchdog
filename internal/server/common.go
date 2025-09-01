@@ -6,15 +6,9 @@ import (
 	"net/http"
 )
 
-const (
-	InsertSign = "INSERT"
-	UpdateSign = "UPDATE"
-	DeleteSign = "DELETE"
-)
+const projName = "ddns-watchdog-server"
 
-var (
-	whitelist map[string]whitelistStruct
-)
+var whitelist map[string]whitelistStruct
 
 type domainRecord struct {
 	Domain    string           `json:"domain"`
@@ -114,4 +108,13 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 		respBody.Message += v.Error() + "\n"
 	}
 	return
+}
+
+func httpGet(url string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", projName+"/"+common.Version)
+	return common.DefaultHttpClient.Do(req)
 }

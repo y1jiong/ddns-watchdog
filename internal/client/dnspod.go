@@ -172,9 +172,9 @@ func postman(url, src string) (dst []byte, err error) {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", ProjName+"/"+common.LocalVersion+" ()")
+	req.Header.Set("User-Agent", projName+"/"+common.Version+" ()")
 
-	resp, err := getGeneralHttpClient().Do(req)
+	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

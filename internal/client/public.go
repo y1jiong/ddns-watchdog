@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"ddns-watchdog/internal/common"
 	"encoding/json"
 	"errors"
@@ -13,10 +14,7 @@ import (
 	"strings"
 )
 
-const (
-	ProjName            = "ddns-watchdog-client"
-	NetworkCardFileName = "network_card.json"
-)
+const NetworkCardFileName = "network_card.json"
 
 var (
 	ConfDirectoryName = "conf"
@@ -48,12 +46,12 @@ func Install() (err error) {
 
 	serviceContent := []byte(
 		"[Unit]\n" +
-			"Description=" + ProjName + " Service\n" +
+			"Description=" + projName + " Service\n" +
 			"After=network-online.target\n\n" +
 			"[Service]\n" +
 			"Type=simple\n" +
 			"WorkingDirectory=" + wd +
-			"\nExecStart=" + wd + "/" + ProjName + " -c " + ConfDirectoryName +
+			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDirectoryName +
 			"\nRestart=on-failure\n" +
 			"RestartSec=2\n\n" +
 			"[Install]\n" +
@@ -64,7 +62,7 @@ func Install() (err error) {
 		return
 	}
 
-	log.Println("可以使用 systemctl 管理", ProjName, "服务了")
+	log.Println("可以使用 systemctl 管理", projName, "服务了")
 	return
 }
 
@@ -203,7 +201,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			}
 
 			var resp *http.Response
-			resp, err = http.Get(apiUrl.IPv4)
+			resp, err = httpGet(apiUrl.IPv4)
 			if err != nil {
 				return
 			}
@@ -254,7 +252,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			}
 
 			var resp *http.Response
-			resp, err = http.Get(apiUrl.IPv6)
+			resp, err = httpGet(apiUrl.IPv6)
 			if err != nil {
 				return
 			}
@@ -281,4 +279,64 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 		}
 	}
 	return
+}
+
+func AccessCenter(ipv4, ipv6 string) {
+	// 构造请求 body
+	reqBody := common.CenterReq{
+		Token:  Client.Center.Token,
+		Enable: Client.Enable,
+		IP: common.IPs{
+			IPv4: ipv4,
+			IPv6: ipv6,
+		},
+	}
+
+	reqJson, err := json.Marshal(reqBody)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// 发送请求
+	req, err := http.NewRequest(http.MethodPost, Client.Center.APIUrl, bytes.NewReader(reqJson))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", projName+"/"+common.Version)
+
+	resp, err := common.DefaultHttpClient.Do(req)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// 处理结果
+	if resp.StatusCode != http.StatusOK {
+		log.Println("The status code returned by the center is", resp.StatusCode)
+	}
+
+	respBodyJson, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if len(respBodyJson) == 0 {
+		return
+	}
+
+	var respBody common.GeneralResp
+	if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
+		log.Println(err)
+		return
+	}
+	for _, v := range strings.Split(respBody.Message, "\n") {
+		if v != "" {
+			log.Println(v)
+		}
+	}
 }
