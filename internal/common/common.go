@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	LocalVersion      = "1.6.0"
+	LocalVersion      = "1.6.1"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
 	ProjectUrl        = "https://github.com/y1jiong/ddns-watchdog"

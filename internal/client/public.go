@@ -87,82 +87,89 @@ func Uninstall() (err error) {
 	return
 }
 
-func NetworkCardRespond() (map[string]string, error) {
-	networkCardInfo := make(map[string]string)
+func NetworkInterfaces() (map[string]string, error) {
+	interfaces := make(map[string]string)
 
-	interfaces, err := net.Interfaces()
+	netInterfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, i := range interfaces {
+	for _, face := range netInterfaces {
 		var ipAddr []net.Addr
-		ipAddr, err = i.Addrs()
+		ipAddr, err = face.Addrs()
 		if err != nil {
 			return nil, err
 		}
 
-		for j, addrAndMask := range ipAddr {
+		for i, addrAndMask := range ipAddr {
 			// 分离 IP 和子网掩码
-			addr := strings.Split(addrAndMask.String(), "/")[0]
-			if strings.Contains(addr, ":") {
-				addr = common.ExpandIPv6Zero(addr)
+			ip := strings.Split(addrAndMask.String(), "/")[0]
+			if strings.Contains(ip, ":") {
+				ip = common.ExpandIPv6Zero(ip)
 			}
-			networkCardInfo[i.Name+" "+strconv.Itoa(j)] = addr
+			interfaces[face.Name+" "+strconv.Itoa(i)] = ip
 		}
 	}
-	return networkCardInfo, nil
+	return interfaces, nil
 }
 
-func fallbackIPv6(ncr map[string]string, preferred string) (string, bool) {
-	// 直接匹配
-	if preferred != "" {
-		if v, ok := ncr[preferred]; ok && strings.Contains(v, ":") && net.ParseIP(v).IsGlobalUnicast() {
-			return v, true
+func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool) {
+	isPublicUnicast := func(ip string) bool {
+		if !strings.Contains(ip, ":") {
+			return false
 		}
+		ipObj := net.ParseIP(ip)
+		if ipObj == nil {
+			return false
+		}
+		return ipObj.IsGlobalUnicast() && !ipObj.IsPrivate()
 	}
 
-	// 尝试去掉末尾数字后匹配
-	ncs := strings.Split(preferred, " ")
-	if _, err := strconv.Atoi(ncs[len(ncs)-1]); err == nil {
-		preferred = strings.Join(ncs[:len(ncs)-1], " ")
-	}
-
-	// 尝试匹配类似 eth0 这种
 	if preferred != "" {
+		// 直接匹配
+		if ip, ok := interfaces[preferred]; ok && isPublicUnicast(ip) {
+			return ip, true
+		}
+
+		// 尝试去掉末尾数字为下一步遍历做准备
+		parts := strings.Split(preferred, " ")
+		if _, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+			preferred = strings.Join(parts[:len(parts)-1], " ")
+		}
+
+		// 尝试遍历匹配 "eth0 0", "eth0 1", ...
 		for i := 0; ; i++ {
-			v, ok := ncr[preferred+" "+strconv.Itoa(i)]
+			ip, ok := interfaces[preferred+" "+strconv.Itoa(i)]
 			if !ok {
 				break
 			}
-			if !strings.Contains(v, ":") || !net.ParseIP(v).IsGlobalUnicast() {
-				continue
+			if isPublicUnicast(ip) {
+				return ip, true
 			}
-			return v, true
 		}
 	}
 
 	// 随便找一个
-	for _, v := range ncr {
-		if !strings.Contains(v, ":") || !net.ParseIP(v).IsGlobalUnicast() {
-			continue
+	for _, ip := range interfaces {
+		if isPublicUnicast(ip) {
+			return ip, true
 		}
-		return v, true
 	}
 
 	return "", false
 }
 
 func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback bool) (ipv4, ipv6 string, err error) {
-	var ncr map[string]string
+	var interfaces map[string]string
 	// 若需网卡信息，则获取网卡信息并提供给用户
 	if nc.Enable && nc.IPv4 == "" && nc.IPv6 == "" {
-		ncr, err = NetworkCardRespond()
+		interfaces, err = NetworkInterfaces()
 		if err != nil {
 			return
 		}
 
-		if err = common.MarshalAndSave(ncr, ConfDirectoryName+"/"+NetworkCardFileName); err != nil {
+		if err = common.MarshalAndSave(interfaces, ConfDirectoryName+"/"+NetworkCardFileName); err != nil {
 			return
 		}
 
@@ -173,7 +180,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 
 	// 若需网卡信息，则获取网卡信息
 	if nc.Enable && (nc.IPv4 != "" || nc.IPv6 != "") {
-		ncr, err = NetworkCardRespond()
+		interfaces, err = NetworkInterfaces()
 		if err != nil {
 			return
 		}
@@ -183,7 +190,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 	if enabled.IPv4 {
 		// 启用网卡 IPv4
 		if nc.Enable && nc.IPv4 != "" {
-			if v, ok := ncr[nc.IPv4]; ok {
+			if v, ok := interfaces[nc.IPv4]; ok {
 				ipv4 = v
 			} else {
 				err = errors.New("IPv4 选择了不存在的网卡")
@@ -230,9 +237,9 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 				ok bool
 			)
 			if fallback {
-				v, ok = fallbackIPv6(ncr, nc.IPv6)
+				v, ok = fallbackIPv6(interfaces, nc.IPv6)
 			} else {
-				v, ok = ncr[nc.IPv6]
+				v, ok = interfaces[nc.IPv6]
 			}
 			if ok {
 				ipv6 = v

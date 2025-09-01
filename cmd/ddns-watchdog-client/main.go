@@ -68,20 +68,20 @@ func processFlag() (exit bool, err error) {
 
 	// 打印网卡信息
 	if *printNetworkCardInfo {
-		var ncr map[string]string
-		ncr, err = client.NetworkCardRespond()
+		var interfaces map[string]string
+		interfaces, err = client.NetworkInterfaces()
 		if err != nil {
 			return
 		}
 
 		var arr []string
-		for key := range ncr {
-			arr = append(arr, key)
+		for name := range interfaces {
+			arr = append(arr, name)
 		}
 		sort.Strings(arr)
 
-		for _, key := range arr {
-			fmt.Printf("%v\n\t%v\n", key, ncr[key])
+		for _, name := range arr {
+			fmt.Printf("%v\n\t%v\n", name, interfaces[name])
 		}
 		return true, nil
 	}
