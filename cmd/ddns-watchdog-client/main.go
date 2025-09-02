@@ -2,10 +2,10 @@ package main
 
 import (
 	"ddns-watchdog/internal/client"
-	"ddns-watchdog/internal/common"
 	"errors"
 	"fmt"
 	"log"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -82,7 +82,7 @@ func processFlag() (exit bool, err error) {
 
 	// 加载自定义配置文件目录
 	if *confPath != "" {
-		client.ConfDirectoryName = common.FormatDirectoryPath(*confPath)
+		client.ConfDirectoryName = filepath.Clean(*confPath)
 	}
 
 	// 有选择地初始化配置文件

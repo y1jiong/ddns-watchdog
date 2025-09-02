@@ -9,16 +9,17 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/mod/semver"
 )
 
 const (
 	Version           = "1.6.1"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
-	ProjectUrl        = "https://github.com/y1jiong/ddns-watchdog"
+	projectUrl        = "https://github.com/y1jiong/ddns-watchdog"
 )
 
 var (
@@ -82,15 +83,6 @@ type GeneralResp struct {
 	Message string `json:"message"`
 }
 
-func FormatDirectoryPath(srcPath string) (dstPath string) {
-	if length := len(srcPath); srcPath[length-1:] == "/" {
-		dstPath = srcPath[0 : length-1]
-	} else {
-		dstPath = srcPath
-	}
-	return
-}
-
 func IsWindows() bool {
 	return runtime.GOOS == "windows"
 }
@@ -134,27 +126,6 @@ func MarshalAndSave(content any, filePath string) (err error) {
 	return os.WriteFile(filePath, jsonContent, 0600)
 }
 
-func CompareVersionString(remoteVersion, localVersion string) bool {
-	rv := strings.Split(remoteVersion, ".")
-	lv := strings.Split(localVersion, ".")
-
-	for i := 0; i < max(len(rv), len(lv)); i++ {
-		var r, l int
-		if i < len(rv) {
-			r, _ = strconv.Atoi(rv[i])
-		}
-		if i < len(lv) {
-			l, _ = strconv.Atoi(lv[i])
-		}
-
-		if r > l {
-			return true
-		}
-	}
-
-	return false
-}
-
 func ExpandIPv6Zero(ip string) string {
 	p := net.ParseIP(ip)
 	if p == nil || p.To4() != nil || len(p) != net.IPv6len {
@@ -187,16 +158,15 @@ func ExpandIPv6Zero(ip string) string {
 	return string(b)
 }
 
-func VersionTips(LatestVersion string) {
+func VersionTips(latestVersion string) {
 	fmt.Println("当前版本", Version)
-	fmt.Println("最新版本", LatestVersion)
-	fmt.Println("项目地址", ProjectUrl)
+	fmt.Println("最新版本", latestVersion)
 	fmt.Println("Git Commit:", GitCommit)
 	fmt.Println("Build Time:", BuildTime)
 	switch {
-	case strings.Contains(LatestVersion, "N/A"):
-		fmt.Println("\n" + LatestVersion + "\n需要手动检查更新，请前往 项目地址 查看")
-	case CompareVersionString(LatestVersion, Version):
-		fmt.Println("\n发现新版本，请前往 项目地址 下载")
+	case strings.Contains(latestVersion, "N/A"):
+		fmt.Println("\n"+latestVersion+"\n需要手动检查更新，请前往", projectUrl, "查看")
+	case semver.Compare("v"+Version, "v"+latestVersion) < 0:
+		fmt.Println("\n发现新版本，请前往", projectUrl, "下载")
 	}
 }

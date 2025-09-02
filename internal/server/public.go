@@ -17,11 +17,9 @@ const (
 
 	InsertSign = "INSERT"
 	UpdateSign = "UPDATE"
-	DeleteSign = "DELETE"
 )
 
 var (
-	InstallPath       = "/etc/systemd/system/" + projName + ".service"
 	ConfDirectoryName = "conf"
 	Srv               = server{}
 	Services          = service{}
@@ -205,7 +203,7 @@ func Install() (err error) {
 			"WantedBy=multi-user.target\n",
 	)
 
-	if err = os.WriteFile(InstallPath, serviceContent, 0600); err != nil {
+	if err = os.WriteFile(installPath, serviceContent, 0600); err != nil {
 		return
 	}
 
@@ -223,7 +221,7 @@ func Uninstall() (err error) {
 		return
 	}
 
-	if err = os.Remove(InstallPath); err != nil {
+	if err = os.Remove(installPath); err != nil {
 		return
 	}
 

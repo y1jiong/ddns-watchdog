@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -90,7 +91,7 @@ func processFlag() (exit bool, err error) {
 	flag.Parse()
 
 	if *confPath != "" {
-		server.ConfDirectoryName = common.FormatDirectoryPath(*confPath)
+		server.ConfDirectoryName = filepath.Clean(*confPath)
 	}
 
 	// 初始化配置
