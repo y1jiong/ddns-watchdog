@@ -166,13 +166,13 @@ func (dpc *DNSPod) recordModifyRequestInit(ipAddr, recordId, recordLineId, recor
 }
 
 func postman(url, src string) (dst []byte, err error) {
-	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(src))
+	req, err := httpNewRequest(http.MethodPost, url, strings.NewReader(src))
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", projName+"/"+common.Version+" ()")
+	req.Header.Set("User-Agent", projName+"/"+common.Version+" ()") // special for DNSPod
 
 	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {

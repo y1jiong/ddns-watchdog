@@ -299,14 +299,13 @@ func AccessCenter(ipv4, ipv6 string) {
 	}
 
 	// 发送请求
-	req, err := http.NewRequest(http.MethodPost, Client.Center.APIUrl, bytes.NewReader(reqJson))
+	req, err := httpNewRequest(http.MethodPost, Client.Center.APIUrl, bytes.NewReader(reqJson))
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", projName+"/"+common.Version)
 
 	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {

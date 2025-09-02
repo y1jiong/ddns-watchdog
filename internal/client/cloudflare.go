@@ -87,14 +87,13 @@ func (cfc *Cloudflare) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 
 func (cfc *Cloudflare) getParseRecord(domain, recordType string) (domainId, recordIP string, err error) {
 	url := "https://api.cloudflare.com/client/v4/zones/" + cfc.ZoneID + "/dns_records?name=" + domain
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := httpNewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return
 	}
 
 	req.Header.Set("Authorization", "Bearer "+cfc.APIToken)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", projName+"/"+common.Version)
 
 	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {
@@ -157,14 +156,13 @@ func (cfc *Cloudflare) updateParseRecord(ipAddr, domainId, recordType, domain st
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(reqJson))
+	req, err := httpNewRequest(http.MethodPut, url, bytes.NewReader(reqJson))
 	if err != nil {
 		return
 	}
 
 	req.Header.Set("Authorization", "Bearer "+cfc.APIToken)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", projName+"/"+common.Version)
 
 	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {
