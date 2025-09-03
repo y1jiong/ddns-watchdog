@@ -10,7 +10,7 @@ import (
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2/region"
 )
 
-const HuaweiCloudConfFileName = "huaweicloud.json"
+const HuaweiCloudConfFilename = "huaweicloud.json"
 
 type HuaweiCloud struct {
 	AccessKeyId     string           `json:"access_key_id"`
@@ -31,16 +31,16 @@ func (hc *HuaweiCloud) InitConf() (msg string, err error) {
 	}
 	hc.SecretAccessKey = hc.AccessKeyId
 
-	return "初始化 " + ConfDirectoryName + "/" + HuaweiCloudConfFileName,
-		common.MarshalAndSave(hc, ConfDirectoryName+"/"+HuaweiCloudConfFileName)
+	return "初始化 " + ConfDir + "/" + HuaweiCloudConfFilename,
+		common.MarshalAndSave(hc, ConfDir+"/"+HuaweiCloudConfFilename)
 }
 
 func (hc *HuaweiCloud) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+HuaweiCloudConfFileName, &hc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+HuaweiCloudConfFilename, &hc); err != nil {
 		return
 	}
 	if hc.AccessKeyId == "" || hc.SecretAccessKey == "" || hc.ZoneName == "" || (hc.Domain.A == "" && hc.Domain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDirectoryName + "/" + HuaweiCloudConfFileName + " 检查你的 access_key_id, secret_access_key, domain 并重新启动")
+		return errors.New("请打开配置文件 " + ConfDir + "/" + HuaweiCloudConfFilename + " 检查你的 access_key_id, secret_access_key, domain 并重新启动")
 	}
 	return
 }

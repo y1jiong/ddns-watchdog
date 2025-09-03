@@ -15,14 +15,14 @@ import (
 )
 
 var (
-	confPath        = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
+	confDir         = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
 	installOption   = flag.BoolP("install", "I", false, "安装服务并退出")
 	uninstallOption = flag.BoolP("uninstall", "U", false, "卸载服务并退出")
 	version         = flag.BoolP("version", "V", false, "查看当前版本并检查更新后退出")
 	initOption      = flag.StringP("init", "i", "", "有选择地初始化配置文件并退出，可以组合使用 (例 01)\n"+
-		"0 -> "+server.ConfFileName+"\n"+
-		"1 -> "+server.ServiceConfFileName+"\n"+
-		"2 -> "+server.WhitelistFileName)
+		"0 -> "+server.ConfFilename+"\n"+
+		"1 -> "+server.ServiceConfFilename+"\n"+
+		"2 -> "+server.WhitelistFilename)
 	add           = flag.BoolP("add", "a", false, "添加或更新 token 信息到白名单")
 	deleteB       = flag.BoolP("delete", "d", false, "删除白名单中的 token")
 	generateToken = flag.BoolP("generate-token", "g", false, "生成 token 并输出")
@@ -77,7 +77,7 @@ func main() {
 	// 启动监听
 	if server.Srv.TLS.Enable {
 		log.Println("Work on", server.Srv.ServerAddr, "with TLS")
-		err = httpSrv.ListenAndServeTLS(server.ConfDirectoryName+"/"+server.Srv.TLS.CertFile, server.ConfDirectoryName+"/"+server.Srv.TLS.KeyFile)
+		err = httpSrv.ListenAndServeTLS(server.Srv.TLS.CertFile, server.Srv.TLS.KeyFile)
 	} else {
 		log.Println("Work on", server.Srv.ServerAddr)
 		err = httpSrv.ListenAndServe()
@@ -90,8 +90,8 @@ func main() {
 func processFlag() (exit bool, err error) {
 	flag.Parse()
 
-	if *confPath != "" {
-		server.ConfDirectoryName = filepath.Clean(*confPath)
+	if *confDir != "" {
+		server.ConfDir = filepath.Clean(*confDir)
 	}
 
 	// 初始化配置

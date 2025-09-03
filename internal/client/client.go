@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-const ConfFileName = "client.json"
+const ConfFilename = "client.json"
 
 type client struct {
 	APIUrl             apiUrl        `json:"api_url"`
@@ -54,18 +54,18 @@ func (conf *client) InitConf() (msg string, err error) {
 	conf.EnableIPv6Fallback = true
 	conf.CheckCycleMinutes = 0
 
-	return "初始化 " + ConfDirectoryName + "/" + ConfFileName,
-		common.MarshalAndSave(conf, ConfDirectoryName+"/"+ConfFileName)
+	return "初始化 " + ConfDir + "/" + ConfFilename,
+		common.MarshalAndSave(conf, ConfDir+"/"+ConfFilename)
 }
 
 func (conf *client) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+ConfFileName, &conf); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
 		return
 	}
 
 	// 检查启用 IP 类型
 	if !conf.Enable.IPv4 && !conf.Enable.IPv6 {
-		return errors.New("请打开客户端配置文件 " + ConfDirectoryName + "/" + ConfFileName + " 启用需要使用的 IP 类型并重新启动")
+		return errors.New("请打开客户端配置文件 " + ConfDir + "/" + ConfFilename + " 启用需要使用的 IP 类型并重新启动")
 	}
 
 	// 检查启用服务
@@ -74,7 +74,7 @@ func (conf *client) LoadConf() (err error) {
 		!conf.Services.AliDNS &&
 		!conf.Services.Cloudflare &&
 		!conf.Services.HuaweiCloud {
-		return errors.New("请打开客户端配置文件 " + ConfDirectoryName + "/" + ConfFileName + " 启用需要使用的服务并重新启动")
+		return errors.New("请打开客户端配置文件 " + ConfDir + "/" + ConfFilename + " 启用需要使用的服务并重新启动")
 	}
 	return
 }

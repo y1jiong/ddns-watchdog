@@ -14,15 +14,15 @@ import (
 	"strings"
 )
 
-const NetworkCardFileName = "network_card.json"
+const NetworkCardFilename = "network_card.json"
 
 var (
-	ConfDirectoryName = "conf"
-	Client            = client{}
-	DP                = DNSPod{}
-	AD                = AliDNS{}
-	Cf                = Cloudflare{}
-	HC                = HuaweiCloud{}
+	ConfDir = "conf"
+	Client  = client{}
+	DP      = DNSPod{}
+	AD      = AliDNS{}
+	Cf      = Cloudflare{}
+	HC      = HuaweiCloud{}
 )
 
 // ServiceCallback 服务回调函数类型
@@ -35,7 +35,7 @@ func Install() (err error) {
 
 	// 注册系统服务
 	if Client.CheckCycleMinutes == 0 {
-		err = errors.New("设置一下 " + ConfDirectoryName + "/" + ConfFileName + " 的 check_cycle_minutes 吧")
+		err = errors.New("设置一下 " + ConfDir + "/" + ConfFilename + " 的 check_cycle_minutes 吧")
 		return
 	}
 
@@ -51,7 +51,7 @@ func Install() (err error) {
 			"[Service]\n" +
 			"Type=simple\n" +
 			"WorkingDirectory=" + wd +
-			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDirectoryName +
+			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDir +
 			"\nRestart=on-failure\n" +
 			"RestartSec=2\n\n" +
 			"[Install]\n" +
@@ -81,7 +81,7 @@ func Uninstall() (err error) {
 	}
 
 	log.Println("卸载服务成功")
-	log.Println("若要完全删除，请移步到", wd, "和", ConfDirectoryName, "完全删除")
+	log.Println("若要完全删除，请移步到", wd, "和", ConfDir, "完全删除")
 	return
 }
 
@@ -167,12 +167,12 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			return
 		}
 
-		if err = common.MarshalAndSave(interfaces, ConfDirectoryName+"/"+NetworkCardFileName); err != nil {
+		if err = common.MarshalAndSave(interfaces, ConfDir+"/"+NetworkCardFilename); err != nil {
 			return
 		}
 
-		err = errors.New("请打开 " + ConfDirectoryName + "/" + NetworkCardFileName + " 选择网卡填入 " +
-			ConfDirectoryName + "/" + ConfFileName + " 的 network_card")
+		err = errors.New("请打开 " + ConfDir + "/" + NetworkCardFilename + " 选择网卡填入 " +
+			ConfDir + "/" + ConfFilename + " 的 network_card")
 		return
 	}
 

@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-const ConfFileName = "server.json"
+const ConfFilename = "server.json"
 
 type server struct {
 	ServerAddr    string `json:"server_addr"`
@@ -32,22 +32,21 @@ type route struct {
 func (conf *server) InitConf() (msg string, err error) {
 	*conf = server{
 		ServerAddr:    ":10032",
-		IsRootServer:  false,
-		RootServerUrl: "https://yzyweb.cn/ddns-watchdog",
+		RootServerUrl: common.DefaultAPIUrl,
 		Route: route{
 			GetIP:  "/",
 			Center: "/center",
 		},
 	}
-	if err = common.MarshalAndSave(conf, ConfDirectoryName+"/"+ConfFileName); err != nil {
+	if err = common.MarshalAndSave(conf, ConfDir+"/"+ConfFilename); err != nil {
 		return
 	}
 
-	return "初始化 " + ConfDirectoryName + "/" + ConfFileName, nil
+	return "初始化 " + ConfDir + "/" + ConfFilename, nil
 }
 
 func (conf *server) LoadConf() (err error) {
-	return common.LoadAndUnmarshal(ConfDirectoryName+"/"+ConfFileName, &conf)
+	return common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf)
 }
 
 func (conf *server) GetLatestVersion() (str string) {

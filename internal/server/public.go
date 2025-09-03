@@ -13,16 +13,16 @@ import (
 )
 
 const (
-	WhitelistFileName = "whitelist.json"
+	WhitelistFilename = "whitelist.json"
 
 	InsertSign = "INSERT"
 	UpdateSign = "UPDATE"
 )
 
 var (
-	ConfDirectoryName = "conf"
-	Srv               = server{}
-	Services          = service{}
+	ConfDir  = "conf"
+	Srv      = server{}
+	Services = service{}
 )
 
 func GenerateToken(length int) (token string) {
@@ -40,13 +40,13 @@ func GenerateToken(length int) (token string) {
 }
 
 func DelFromWhitelist(token string) (msg string, err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+WhitelistFileName, &whitelist); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist); err != nil {
 		return
 	}
 	if _, ok := whitelist[token]; ok {
 		msg = fmt.Sprintf("%v has been deleted.\n", whitelist[token].Description)
 		delete(whitelist, token)
-		err = common.MarshalAndSave(whitelist, ConfDirectoryName+"/"+WhitelistFileName)
+		err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename)
 	} else {
 		msg = fmt.Sprintf("%v does not exist.\n", token)
 	}
@@ -76,7 +76,7 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 	}
 
 	// 加载白名单
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+WhitelistFileName, &whitelist); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist); err != nil {
 		return
 	}
 
@@ -131,7 +131,7 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 	}
 
 	// 保存白名单
-	if err = common.MarshalAndSave(whitelist, ConfDirectoryName+"/"+WhitelistFileName); err != nil {
+	if err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename); err != nil {
 		return
 	}
 	return
@@ -139,15 +139,15 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 
 func InitWhitelist() (msg string, err error) {
 	whitelist = make(map[string]whitelistStruct)
-	if err = common.MarshalAndSave(whitelist, ConfDirectoryName+"/"+WhitelistFileName); err != nil {
+	if err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename); err != nil {
 		return
 	}
 
-	return "初始化 " + ConfDirectoryName + "/" + WhitelistFileName, nil
+	return "初始化 " + ConfDir + "/" + WhitelistFilename, nil
 }
 
 func LoadWhitelist() (err error) {
-	return common.LoadAndUnmarshal(ConfDirectoryName+"/"+WhitelistFileName, &whitelist)
+	return common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist)
 }
 
 func GetClientIP(req *http.Request) (ipAddr string) {
@@ -196,7 +196,7 @@ func Install() (err error) {
 			"[Service]\n" +
 			"Type=simple\n" +
 			"WorkingDirectory=" + wd +
-			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDirectoryName +
+			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDir +
 			"\nRestart=on-failure\n" +
 			"RestartSec=2\n\n" +
 			"[Install]\n" +
@@ -226,6 +226,6 @@ func Uninstall() (err error) {
 	}
 
 	log.Println("卸载服务成功")
-	log.Println("若要完全删除，请移步到", wd, "和", ConfDirectoryName, "完全删除")
+	log.Println("若要完全删除，请移步到", wd, "和", ConfDir, "完全删除")
 	return
 }

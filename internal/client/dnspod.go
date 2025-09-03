@@ -10,7 +10,7 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-const DNSPodConfFileName = "dnspod.json"
+const DNSPodConfFilename = "dnspod.json"
 
 type DNSPod struct {
 	ID        string           `json:"id"`
@@ -30,17 +30,17 @@ func (dpc *DNSPod) InitConf() (msg string, err error) {
 	}
 	dpc.Token = dpc.ID
 
-	return "初始化 " + ConfDirectoryName + "/" + DNSPodConfFileName,
-		common.MarshalAndSave(dpc, ConfDirectoryName+"/"+DNSPodConfFileName)
+	return "初始化 " + ConfDir + "/" + DNSPodConfFilename,
+		common.MarshalAndSave(dpc, ConfDir+"/"+DNSPodConfFilename)
 }
 
 func (dpc *DNSPod) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+DNSPodConfFileName, &dpc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil {
 		return
 	}
 
 	if dpc.ID == "" || dpc.Token == "" || dpc.Domain == "" || (dpc.SubDomain.A == "" && dpc.SubDomain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDirectoryName + "/" + DNSPodConfFileName + " 检查你的 id, token, domain, sub_domain 并重新启动")
+		return errors.New("请打开配置文件 " + ConfDir + "/" + DNSPodConfFilename + " 检查你的 id, token, domain, sub_domain 并重新启动")
 	}
 	return
 }

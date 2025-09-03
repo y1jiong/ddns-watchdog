@@ -4,7 +4,7 @@ import (
 	"ddns-watchdog/internal/common"
 )
 
-const ServiceConfFileName = "services.json"
+const ServiceConfFilename = "services.json"
 
 type service struct {
 	DNSPod      dnspod      `json:"dnspod"`
@@ -39,15 +39,15 @@ type huaweiCloud struct {
 
 func (conf *service) InitConf() (msg string, err error) {
 	*conf = service{}
-	if err = common.MarshalAndSave(conf, ConfDirectoryName+"/"+ServiceConfFileName); err != nil {
+	if err = common.MarshalAndSave(conf, ConfDir+"/"+ServiceConfFilename); err != nil {
 		return
 	}
 
-	return "初始化 " + ConfDirectoryName + "/" + ServiceConfFileName, nil
+	return "初始化 " + ConfDir + "/" + ServiceConfFilename, nil
 }
 
 func (conf *service) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+ServiceConfFileName, &conf); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ServiceConfFilename, &conf); err != nil {
 		return
 	}
 	return LoadWhitelist()

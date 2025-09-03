@@ -11,7 +11,7 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-const CloudflareConfFileName = "cloudflare.json"
+const CloudflareConfFilename = "cloudflare.json"
 
 type Cloudflare struct {
 	ZoneID   string           `json:"zone_id"`
@@ -38,17 +38,17 @@ func (cfc *Cloudflare) InitConf() (msg string, err error) {
 		},
 	}
 
-	return "初始化 " + ConfDirectoryName + "/" + CloudflareConfFileName,
-		common.MarshalAndSave(cfc, ConfDirectoryName+"/"+CloudflareConfFileName)
+	return "初始化 " + ConfDir + "/" + CloudflareConfFilename,
+		common.MarshalAndSave(cfc, ConfDir+"/"+CloudflareConfFilename)
 }
 
 func (cfc *Cloudflare) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDirectoryName+"/"+CloudflareConfFileName, &cfc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil {
 		return
 	}
 
 	if cfc.ZoneID == "" || cfc.APIToken == "" || (cfc.Domain.A == "" && cfc.Domain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDirectoryName + "/" + CloudflareConfFileName + " 检查你的 zone_id, api_token, domain 并重新启动")
+		return errors.New("请打开配置文件 " + ConfDir + "/" + CloudflareConfFilename + " 检查你的 zone_id, api_token, domain 并重新启动")
 	}
 	return
 }

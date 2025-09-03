@@ -14,17 +14,17 @@ import (
 )
 
 var (
+	confDir         = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
 	installOption   = flag.BoolP("install", "I", false, "安装服务并退出")
 	uninstallOption = flag.BoolP("uninstall", "U", false, "卸载服务并退出")
 	enforcement     = flag.BoolP("force", "f", false, "强制检查 DNS 解析记录")
 	version         = flag.BoolP("version", "V", false, "查看当前版本并检查更新后退出")
 	initOption      = flag.StringP("init", "i", "", "有选择地初始化配置文件并退出，可以组合使用 (例 01)\n"+
-		"0 -> "+client.ConfFileName+"\n"+
-		"1 -> "+client.DNSPodConfFileName+"\n"+
-		"2 -> "+client.AliDNSConfFileName+"\n"+
-		"3 -> "+client.CloudflareConfFileName+"\n"+
-		"4 -> "+client.HuaweiCloudConfFileName)
-	confPath             = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
+		"0 -> "+client.ConfFilename+"\n"+
+		"1 -> "+client.DNSPodConfFilename+"\n"+
+		"2 -> "+client.AliDNSConfFilename+"\n"+
+		"3 -> "+client.CloudflareConfFilename+"\n"+
+		"4 -> "+client.HuaweiCloudConfFilename)
 	printNetworkCardInfo = flag.BoolP("network-card", "n", false, "输出网卡信息并退出")
 )
 
@@ -81,8 +81,8 @@ func processFlag() (exit bool, err error) {
 	}
 
 	// 加载自定义配置文件目录
-	if *confPath != "" {
-		client.ConfDirectoryName = filepath.Clean(*confPath)
+	if *confDir != "" {
+		client.ConfDir = filepath.Clean(*confDir)
 	}
 
 	// 有选择地初始化配置文件
