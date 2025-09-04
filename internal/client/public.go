@@ -102,7 +102,10 @@ func NetworkInterfaces() (map[string]string, error) {
 
 		for i, addrAndMask := range ipAddr {
 			// 分离 IP 和子网掩码
-			ip := strings.Split(addrAndMask.String(), "/")[0]
+			ip := addrAndMask.String()
+			if idx := strings.LastIndexByte(ip, '/'); idx != -1 {
+				ip = ip[:idx]
+			}
 			if strings.Contains(ip, ":") {
 				ip = common.ExpandIPv6Zero(ip)
 			}
@@ -131,9 +134,10 @@ func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool)
 		}
 
 		// 尝试去掉末尾数字为下一步遍历做准备
-		parts := strings.Split(preferred, " ")
-		if _, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
-			preferred = strings.Join(parts[:len(parts)-1], " ")
+		if idx := strings.LastIndexByte(preferred, ' '); idx != -1 {
+			if _, err := strconv.Atoi(preferred[idx+1:]); err == nil {
+				preferred = preferred[:idx]
+			}
 		}
 
 		// 尝试遍历匹配 "eth0 0", "eth0 1", ...

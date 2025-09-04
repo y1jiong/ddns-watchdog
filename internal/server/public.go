@@ -150,30 +150,33 @@ func LoadWhitelist() (err error) {
 	return common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist)
 }
 
-func GetClientIP(req *http.Request) (ipAddr string) {
-	ipAddr = req.Header.Get("X-Forwarded-For")
-	if ipAddr != "" && strings.Contains(ipAddr, ",") {
-		// 如果只取第零个切片，这行其实可有可无
-		//ipAddr = strings.ReplaceAll(ipAddr, " ", "")
-		ipAddr = strings.Split(ipAddr, ",")[0]
+func GetClientIP(req *http.Request) (ip string) {
+	ip = req.Header.Get("X-Forwarded-For")
+	if idx := strings.IndexByte(ip, ','); idx != -1 {
+		ip = ip[:idx]
 	}
-	if ipAddr == "" {
-		ipAddr = req.Header.Get("X-Real-IP")
+	if ip == "" {
+		ip = req.Header.Get("X-Real-IP")
 	}
-	if ipAddr == "" {
+	if ip == "" && req.RemoteAddr != "" {
 		// 只保留 ip:port 的 ip
-		if strings.Contains(req.RemoteAddr, "[") {
+		if req.RemoteAddr[0] == '[' {
 			// IPv6
-			ipAddr = strings.Split(req.RemoteAddr[1:], "]:")[0]
+			if idx := strings.LastIndexByte(req.RemoteAddr, ']'); idx != -1 {
+				ip = req.RemoteAddr[1:idx]
+			}
 		} else {
 			// IPv4
-			ipAddr = strings.Split(req.RemoteAddr, ":")[0]
+			if idx := strings.LastIndexByte(req.RemoteAddr, ':'); idx != -1 {
+				ip = req.RemoteAddr[:idx]
+			}
 		}
 	}
+	ip = strings.TrimSpace(ip)
 
-	// IPv6 转格式 和 :: 解压
-	if strings.Contains(ipAddr, ":") {
-		ipAddr = common.ExpandIPv6Zero(ipAddr)
+	// IPv6 地址展开
+	if strings.Contains(ip, ":") {
+		ip = common.ExpandIPv6Zero(ip)
 	}
 	return
 }
