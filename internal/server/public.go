@@ -186,8 +186,11 @@ func Install() (err error) {
 		return errors.New("windows 暂不支持安装到系统")
 	}
 
-	// 注册系统服务
 	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+	exe, err := os.Executable()
 	if err != nil {
 		return
 	}
@@ -195,21 +198,21 @@ func Install() (err error) {
 	serviceContent := []byte(
 		"[Unit]\n" +
 			"Description=" + projName + " Service\n" +
+			"Wants=network-online.target\n" +
 			"After=network-online.target\n\n" +
 			"[Service]\n" +
 			"Type=simple\n" +
 			"WorkingDirectory=" + wd +
-			"\nExecStart=" + wd + "/" + projName + " -c " + ConfDir +
+			"\nExecStart=" + exe + " -c " + ConfDir +
 			"\nRestart=on-failure\n" +
-			"RestartSec=2\n\n" +
+			"RestartSec=2\n" +
+			"LimitNOFILE=65535\n\n" +
 			"[Install]\n" +
 			"WantedBy=multi-user.target\n",
 	)
-
-	if err = os.WriteFile(installPath, serviceContent, 0600); err != nil {
+	if err = os.WriteFile(installPath, serviceContent, 0o644); err != nil {
 		return
 	}
-
 	log.Println("可以使用 systemctl 控制", projName, "服务了")
 	return
 }
@@ -219,7 +222,7 @@ func Uninstall() (err error) {
 		return errors.New("windows 暂不支持安装到系统")
 	}
 
-	wd, err := os.Getwd()
+	exe, err := os.Executable()
 	if err != nil {
 		return
 	}
@@ -227,8 +230,6 @@ func Uninstall() (err error) {
 	if err = os.Remove(installPath); err != nil {
 		return
 	}
-
-	log.Println("卸载服务成功")
-	log.Println("若要完全删除，请移步到", wd, "和", ConfDir, "完全删除")
+	log.Println("卸载服务成功\n若要完全删除，请移步到", exe, "和", ConfDir, "完全删除")
 	return
 }

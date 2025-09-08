@@ -7,7 +7,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.167
 	github.com/spf13/pflag v1.0.10
-	golang.org/x/mod v0.27.0
+	golang.org/x/mod v0.28.0
 )
 
 require (

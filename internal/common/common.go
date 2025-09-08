@@ -91,7 +91,7 @@ func IsDirExistAndCreate(dirPath string) (err error) {
 	_, err = os.Stat(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = os.MkdirAll(dirPath, 0750)
+			err = os.MkdirAll(dirPath, 0o755)
 		}
 		return
 	}
@@ -123,7 +123,7 @@ func MarshalAndSave(content any, filePath string) (err error) {
 		return
 	}
 
-	return os.WriteFile(filePath, jsonContent, 0600)
+	return os.WriteFile(filePath, jsonContent, 0o644)
 }
 
 func ExpandIPv6Zero(ip string) string {
