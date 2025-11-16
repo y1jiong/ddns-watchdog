@@ -10,7 +10,10 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-const DNSPodConfFilename = "dnspod.json"
+const (
+	DNSPodConfFilename = "dnspod.json"
+	dnsPodPrefix       = "DNSPod: "
+)
 
 type DNSPod struct {
 	ID        string           `json:"id"`
@@ -56,7 +59,7 @@ func (dpc *DNSPod) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, 
 			if err = dpc.updateParseRecord(ipv4, recordId, recordLineId, "A", dpc.SubDomain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "DNSPod: "+dpc.SubDomain.A+"."+dpc.Domain+" 已更新解析记录 "+ipv4)
+				msg = append(msg, dnsPodPrefix+dpc.SubDomain.A+"."+dpc.Domain+" 已更新解析记录 "+ipv4)
 			}
 		}
 	}
@@ -70,7 +73,7 @@ func (dpc *DNSPod) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, 
 			if err = dpc.updateParseRecord(ipv6, recordId, recordLineId, "AAAA", dpc.SubDomain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "DNSPod: "+dpc.SubDomain.AAAA+"."+dpc.Domain+" 已更新解析记录 "+ipv6)
+				msg = append(msg, dnsPodPrefix+dpc.SubDomain.AAAA+"."+dpc.Domain+" 已更新解析记录 "+ipv6)
 			}
 		}
 	}
@@ -80,7 +83,7 @@ func (dpc *DNSPod) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, 
 func checkRespondStatus(jsonObj *simplejson.Json) (err error) {
 	statusCode := jsonObj.Get("status").Get("code").MustString()
 	if statusCode != "1" {
-		return errors.New("DNSPod: " + statusCode + ": " + jsonObj.Get("status").Get("message").MustString())
+		return errors.New(dnsPodPrefix + statusCode + ": " + jsonObj.Get("status").Get("message").MustString())
 	}
 	return
 }
@@ -105,7 +108,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 
 	records, err := jsonObj.Get("records").Array()
 	if len(records) == 0 {
-		err = errors.New("DNSPod: " + subDomain + "." + dpc.Domain + " 解析记录不存在")
+		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " 解析记录不存在")
 		return
 	}
 
@@ -120,7 +123,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 	}
 
 	if recordId == "" || recordIP == "" || recordLineId == "" {
-		err = errors.New("DNSPod: " + subDomain + "." + dpc.Domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " 的 " + recordType + " 解析记录不存在")
 	}
 	return
 }

@@ -11,7 +11,10 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-const CloudflareConfFilename = "cloudflare.json"
+const (
+	CloudflareConfFilename = "cloudflare.json"
+	cloudflarePrefix       = "Cloudflare: "
+)
 
 type Cloudflare struct {
 	ZoneID   string           `json:"zone_id"`
@@ -64,7 +67,7 @@ func (cfc *Cloudflare) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = cfc.updateParseRecord(ipv4, domainId, "A", cfc.Domain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "Cloudflare: "+cfc.Domain.A+" 已更新解析记录 "+ipv4)
+				msg = append(msg, cloudflarePrefix+cfc.Domain.A+" 已更新解析记录 "+ipv4)
 			}
 		}
 	}
@@ -78,7 +81,7 @@ func (cfc *Cloudflare) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = cfc.updateParseRecord(ipv6, domainId, "AAAA", cfc.Domain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "Cloudflare: "+cfc.Domain.AAAA+" 已更新解析记录 "+ipv6)
+				msg = append(msg, cloudflarePrefix+cfc.Domain.AAAA+" 已更新解析记录 "+ipv6)
 			}
 		}
 	}
@@ -112,17 +115,17 @@ func (cfc *Cloudflare) getParseRecord(domain, recordType string) (domainId, reco
 	}
 
 	if errMsg := jsonObj.Get("error").MustString(); errMsg != "" {
-		err = errors.New("Cloudflare: " + errMsg)
+		err = errors.New(cloudflarePrefix + errMsg)
 		return
 	}
 	if !jsonObj.Get("success").MustBool() {
-		err = errors.New("Cloudflare: 身份认证似乎有问题")
+		err = errors.New(cloudflarePrefix + "身份认证似乎有问题")
 		return
 	}
 
 	records, err := jsonObj.Get("result").Array()
 	if len(records) == 0 {
-		err = errors.New("Cloudflare: " + domain + " 解析记录不存在")
+		err = errors.New(cloudflarePrefix + domain + " 解析记录不存在")
 		return
 	}
 
@@ -136,7 +139,7 @@ func (cfc *Cloudflare) getParseRecord(domain, recordType string) (domainId, reco
 	}
 
 	if domainId == "" || recordIP == "" {
-		err = errors.New("Cloudflare: " + domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(cloudflarePrefix + domain + " 的 " + recordType + " 解析记录不存在")
 	}
 	return
 }
@@ -197,7 +200,7 @@ func (cfc *Cloudflare) updateParseRecord(ipAddr, domainId, recordType, domain st
 			element := value.(map[string]any)
 			errCode := element["code"].(json.Number)
 			errMsg := element["message"].(string)
-			errorsMsg = errorsMsg + "Cloudflare: " + errCode.String() + ": " + errMsg + "\n"
+			errorsMsg = errorsMsg + cloudflarePrefix + errCode.String() + ": " + errMsg + "\n"
 		}
 
 		err = errors.New(errorsMsg)

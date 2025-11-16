@@ -10,7 +10,11 @@ import (
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2/region"
 )
 
-const HuaweiCloudConfFilename = "huaweicloud.json"
+const (
+	HuaweiCloudConfFilename = "huaweicloud.json"
+	huaweiCloudPrefix       = "HuaweiCloud: "
+	huaweiCloudRegion       = "cn-east-3"
+)
 
 type HuaweiCloud struct {
 	AccessKeyId     string           `json:"access_key_id"`
@@ -60,7 +64,7 @@ func (hc *HuaweiCloud) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = hc.updateParseRecord(ipv4, recordSetId, "A", hc.Domain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "HuaweiCloud: "+hc.Domain.A+" 已更新解析记录 "+ipv4)
+				msg = append(msg, huaweiCloudPrefix+hc.Domain.A+" 已更新解析记录 "+ipv4)
 			}
 		}
 	}
@@ -72,7 +76,7 @@ func (hc *HuaweiCloud) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = hc.updateParseRecord(ipv6, recordSetId, "AAAA", hc.Domain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "HuaweiCloud: "+hc.Domain.AAAA+" 已更新解析记录 "+ipv6)
+				msg = append(msg, huaweiCloudPrefix+hc.Domain.AAAA+" 已更新解析记录 "+ipv6)
 			}
 		}
 	}
@@ -88,7 +92,7 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 		return
 	}
 
-	hr, err := region.SafeValueOf("cn-east-3")
+	hr, err := region.SafeValueOf(huaweiCloudRegion)
 	if err != nil {
 		return
 	}
@@ -112,7 +116,7 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 		}
 	}
 	if hc.ZoneId == "" {
-		err = errors.New("HuaweiCloud: " + hc.ZoneName + " Zone 不存在")
+		err = errors.New(huaweiCloudPrefix + hc.ZoneName + " Zone 不存在")
 	}
 	return
 }
@@ -126,7 +130,7 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 		return
 	}
 
-	hr, err := region.SafeValueOf("cn-east-3")
+	hr, err := region.SafeValueOf(huaweiCloudRegion)
 	if err != nil {
 		return
 	}
@@ -158,7 +162,7 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 	}
 
 	if recordSetId == "" || recordIP == "" {
-		err = errors.New("HuaweiCloud: " + domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(huaweiCloudPrefix + domain + " 的 " + recordType + " 解析记录不存在")
 	}
 	return
 }
@@ -172,7 +176,7 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 		return
 	}
 
-	hr, err := region.SafeValueOf("cn-east-3")
+	hr, err := region.SafeValueOf(huaweiCloudRegion)
 	if err != nil {
 		return
 	}

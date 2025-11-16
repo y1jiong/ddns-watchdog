@@ -7,7 +7,10 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 )
 
-const AliDNSConfFilename = "alidns.json"
+const (
+	AliDNSConfFilename = "alidns.json"
+	aliDNSPrefix       = "AliDNS: "
+)
 
 type AliDNS struct {
 	AccessKeyId     string           `json:"access_key_id"`
@@ -53,7 +56,7 @@ func (ad *AliDNS) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, e
 			if err = ad.updateParseRecord(ipv4, recordId, "A", ad.SubDomain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "AliDNS: "+ad.SubDomain.A+"."+ad.Domain+" 已更新解析记录 "+ipv4)
+				msg = append(msg, aliDNSPrefix+ad.SubDomain.A+"."+ad.Domain+" 已更新解析记录 "+ipv4)
 			}
 		}
 	}
@@ -67,7 +70,7 @@ func (ad *AliDNS) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, e
 			if err = ad.updateParseRecord(ipv6, recordId, "AAAA", ad.SubDomain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, "AliDNS: "+ad.SubDomain.AAAA+"."+ad.Domain+" 已更新解析记录 "+ipv6)
+				msg = append(msg, aliDNSPrefix+ad.SubDomain.AAAA+"."+ad.Domain+" 已更新解析记录 "+ipv6)
 			}
 		}
 	}
@@ -99,7 +102,7 @@ func (ad *AliDNS) getParseRecord(subDomain, recordType string) (recordId, record
 	}
 
 	if recordId == "" || recordIP == "" {
-		err = errors.New("AliDNS: " + subDomain + "." + ad.Domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(aliDNSPrefix + subDomain + "." + ad.Domain + " 的 " + recordType + " 解析记录不存在")
 	}
 	return
 }
