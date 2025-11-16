@@ -7,7 +7,7 @@ SERVER_CODE_FILE='./cmd/ddns-watchdog-server/main.go'
 OUTPUT_PATH='./build'
 
 # check if the $OUTPUT_PATH folder exists
-if [ ! -d "$OUTPUT_PATH" ]; then
+if [[ ! -d "$OUTPUT_PATH" ]]; then
     mkdir "$OUTPUT_PATH"
 fi
 
