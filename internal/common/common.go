@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Version           = "1.6.2"
+	Version           = "1.6.3"
 	DefaultAPIUrl     = "https://yzyweb.cn/ddns-watchdog"
 	DefaultIPv6APIUrl = "https://yzyweb.cn/ddns-watchdog6"
 	projectUrl        = "https://github.com/y1jiong/ddns-watchdog"
@@ -91,7 +91,7 @@ func IsDirExistAndCreate(dirPath string) (err error) {
 	_, err = os.Stat(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = os.MkdirAll(dirPath, 0o755)
+			err = os.MkdirAll(dirPath, 0o750)
 		}
 		return
 	}
@@ -123,7 +123,7 @@ func MarshalAndSave(content any, filePath string) (err error) {
 		return
 	}
 
-	return os.WriteFile(filePath, jsonContent, 0o644)
+	return os.WriteFile(filePath, jsonContent, 0o600)
 }
 
 func ExpandIPv6Zero(ip string) string {
