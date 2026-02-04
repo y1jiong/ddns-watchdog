@@ -1,6 +1,6 @@
 .PHONY: all
 all:
 	@echo "Building client..."
-	@make -f Makefile.client
+	@make -f client.mk
 	@echo "Building server..."
-	@make -f Makefile.server
+	@make -f server.mk
