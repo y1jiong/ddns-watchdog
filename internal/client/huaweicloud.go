@@ -27,16 +27,16 @@ type HuaweiCloud struct {
 
 func (hc *HuaweiCloud) InitConf() (msg string, err error) {
 	*hc = HuaweiCloud{
-		AccessKeyId: "在 https://console.huaweicloud.com/iam/ 获取",
+		AccessKeyId: "get from https://console.huaweicloud.com/iam/",
 		ZoneName:    "example.com.",
 		Domain: common.Subdomain{
-			A:    "A记录子域名.example.com.",
-			AAAA: "AAAA记录子域名.example.com.",
+			A:    "subdomain.example.com.",
+			AAAA: "subdomain.example.com.",
 		},
 	}
 	hc.SecretAccessKey = hc.AccessKeyId
 
-	return "初始化 " + ConfDir + "/" + HuaweiCloudConfFilename,
+	return "initialized " + ConfDir + "/" + HuaweiCloudConfFilename,
 		common.MarshalAndSave(hc, ConfDir+"/"+HuaweiCloudConfFilename)
 }
 
@@ -63,7 +63,7 @@ func (hc *HuaweiCloud) LoadConf() (err error) {
 	}
 
 	if hc.AccessKeyId == "" || hc.SecretAccessKey == "" || hc.ZoneName == "" || (hc.Domain.A == "" && hc.Domain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDir + "/" + HuaweiCloudConfFilename + " 检查你的 access_key_id, secret_access_key, domain 并重新启动")
+		return errors.New("check access_key_id, secret_access_key, zone_name, domain in " + ConfDir + "/" + HuaweiCloudConfFilename)
 	}
 	return
 }
@@ -83,7 +83,7 @@ func (hc *HuaweiCloud) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = hc.updateParseRecord(ipv4, recordSetId, "A", hc.Domain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, huaweiCloudPrefix+hc.Domain.A+" 已更新解析记录 "+ipv4)
+				msg = append(msg, huaweiCloudPrefix+hc.Domain.A+" record updated to "+ipv4)
 			}
 		}
 	}
@@ -95,7 +95,7 @@ func (hc *HuaweiCloud) Run(enabled common.Enable, ipv4, ipv6 string) (msg []stri
 			if err = hc.updateParseRecord(ipv6, recordSetId, "AAAA", hc.Domain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, huaweiCloudPrefix+hc.Domain.AAAA+" 已更新解析记录 "+ipv6)
+				msg = append(msg, huaweiCloudPrefix+hc.Domain.AAAA+" record updated to "+ipv6)
 			}
 		}
 	}
@@ -135,7 +135,7 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 		}
 	}
 	if hc.ZoneId == "" {
-		err = errors.New(huaweiCloudPrefix + hc.ZoneName + " Zone 不存在")
+		err = errors.New(huaweiCloudPrefix + hc.ZoneName + " zone not found")
 	}
 	return
 }
@@ -181,7 +181,7 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 	}
 
 	if recordSetId == "" || recordIP == "" {
-		err = errors.New(huaweiCloudPrefix + domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(huaweiCloudPrefix + domain + " " + recordType + " record not found")
 	}
 	return
 }

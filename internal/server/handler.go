@@ -11,7 +11,6 @@ import (
 func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
-	// 判断请求方法
 	if req.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -42,13 +41,11 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
-	// 判断请求方法
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	// 读取并解码 POST 请求
 	bodyJson, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Println(err)
@@ -63,7 +60,6 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 鉴权
 	if len(body.Token) > 127 {
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -79,7 +75,6 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 模拟客户端
 	httpStatus, respBody, err := doVirtualClient(body, whitelist[body.Token])
 	if err != nil {
 		return
@@ -109,6 +104,5 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 访问成功日志
 	log.Printf("%v(%v) access successfully.\n", whitelist[body.Token].Description, GetClientIP(req))
 }

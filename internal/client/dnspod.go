@@ -25,16 +25,16 @@ type DNSPod struct {
 
 func (dpc *DNSPod) InitConf() (msg string, err error) {
 	*dpc = DNSPod{
-		ID:     "在 https://console.dnspod.cn/account/token/token 获取",
+		ID:     "get from https://console.dnspod.cn/account/token/token",
 		Domain: "example.com",
 		SubDomain: common.Subdomain{
-			A:    "A记录子域名",
-			AAAA: "AAAA记录子域名",
+			A:    "subdomain for A record",
+			AAAA: "subdomain for AAAA record",
 		},
 	}
 	dpc.Token = dpc.ID
 
-	return "初始化 " + ConfDir + "/" + DNSPodConfFilename,
+	return "initialized " + ConfDir + "/" + DNSPodConfFilename,
 		common.MarshalAndSave(dpc, ConfDir+"/"+DNSPodConfFilename)
 }
 
@@ -61,37 +61,33 @@ func (dpc *DNSPod) LoadConf() (err error) {
 	}
 
 	if dpc.ID == "" || dpc.Token == "" || dpc.Domain == "" || (dpc.SubDomain.A == "" && dpc.SubDomain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDir + "/" + DNSPodConfFilename + " 检查你的 id, token, domain, sub_domain 并重新启动")
+		return errors.New("check id, token, domain, sub_domain in " + ConfDir + "/" + DNSPodConfFilename)
 	}
 	return
 }
 
 func (dpc *DNSPod) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, errs []error) {
 	if ipv4 != "" && enabled.IPv4 && dpc.SubDomain.A != "" {
-		// 获取解析记录
 		recordId, recordLineId, recordIP, err := dpc.getParseRecord(dpc.SubDomain.A, "A")
 		if err != nil {
 			errs = append(errs, err)
 		} else if recordIP != ipv4 {
-			// 更新解析记录
 			if err = dpc.updateParseRecord(ipv4, recordId, recordLineId, "A", dpc.SubDomain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, dnsPodPrefix+dpc.SubDomain.A+"."+dpc.Domain+" 已更新解析记录 "+ipv4)
+				msg = append(msg, dnsPodPrefix+dpc.SubDomain.A+"."+dpc.Domain+" record updated to "+ipv4)
 			}
 		}
 	}
 	if ipv6 != "" && enabled.IPv6 && dpc.SubDomain.AAAA != "" {
-		// 获取解析记录
 		recordId, recordLineId, recordIP, err := dpc.getParseRecord(dpc.SubDomain.AAAA, "AAAA")
 		if err != nil {
 			errs = append(errs, err)
 		} else if recordIP != ipv6 {
-			// 更新解析记录
 			if err = dpc.updateParseRecord(ipv6, recordId, recordLineId, "AAAA", dpc.SubDomain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, dnsPodPrefix+dpc.SubDomain.AAAA+"."+dpc.Domain+" 已更新解析记录 "+ipv6)
+				msg = append(msg, dnsPodPrefix+dpc.SubDomain.AAAA+"."+dpc.Domain+" record updated to "+ipv6)
 			}
 		}
 	}
@@ -126,7 +122,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 
 	records, err := jsonObj.Get("records").Array()
 	if len(records) == 0 {
-		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " 解析记录不存在")
+		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " record not found")
 		return
 	}
 
@@ -141,7 +137,7 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 	}
 
 	if recordId == "" || recordIP == "" || recordLineId == "" {
-		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(dnsPodPrefix + subDomain + "." + dpc.Domain + " " + recordType + " record not found")
 	}
 	return
 }

@@ -43,7 +43,7 @@ func (conf *service) InitConf() (msg string, err error) {
 		return
 	}
 
-	return "初始化 " + ConfDir + "/" + ServiceConfFilename, nil
+	return "initialized " + ConfDir + "/" + ServiceConfFilename, nil
 }
 
 func (conf *service) LoadConf() (err error) {

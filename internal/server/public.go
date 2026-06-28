@@ -53,7 +53,6 @@ func DelFromWhitelist(token string) (msg string, err error) {
 
 func AddToWhitelist(token, message, service, domain, a, aaaa string) (status string, err error) {
 	if service != "" {
-		// 规范输入
 		switch strings.ToLower(service) {
 		case common.DNSPod:
 			service = common.DNSPod
@@ -64,21 +63,19 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 		case common.HuaweiCloud:
 			service = common.HuaweiCloud
 		default:
-			err = errors.New("不支持的服务供应商")
+			err = errors.New("unsupported provider")
 			return
 		}
 	}
 	if a == "" && aaaa == "" {
-		err = errors.New("没有指定解析记录")
+		err = errors.New("no DNS record specified")
 		return
 	}
 
-	// 加载白名单
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist); err != nil {
 		return
 	}
 
-	// 是否已经存在记录
 	if v, ok := whitelist[token]; ok {
 		if a != "" {
 			v.DomainRecord.Subdomain.A = a
@@ -98,21 +95,22 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 		if message == "" {
 			message = "undefined"
 		}
+		// on insert, aaaa defaults to a so a single -A flag covers both record types
+		// on update (above branch), we intentionally leave aaaa unchanged if not provided
 		if aaaa == "" {
 			aaaa = a
 		}
 		if domain == "" {
-			err = errors.New("没有指定需要操作的域名")
+			err = errors.New("no domain specified")
 		}
 		if service == "" {
-			err = errors.New("没有指定需要采用的服务供应商")
+			err = errors.New("no provider specified")
 		}
 
 		if err != nil {
 			return
 		}
 
-		// 写入白名单
 		whitelist[token] = whitelistStruct{
 			Enable:      true,
 			Description: message,
@@ -128,7 +126,6 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 		status = InsertSign
 	}
 
-	// 保存白名单
 	if err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename); err != nil {
 		return
 	}
@@ -141,7 +138,7 @@ func InitWhitelist() (msg string, err error) {
 		return
 	}
 
-	return "初始化 " + ConfDir + "/" + WhitelistFilename, nil
+	return "initialized " + ConfDir + "/" + WhitelistFilename, nil
 }
 
 func LoadWhitelist() (err error) {
@@ -149,6 +146,7 @@ func LoadWhitelist() (err error) {
 }
 
 func GetClientIP(req *http.Request) (ip string) {
+	// X-Forwarded-For may be a comma-separated chain; the first value is the original client IP
 	ip = req.Header.Get("X-Forwarded-For")
 	if idx := strings.IndexByte(ip, ','); idx != -1 {
 		ip = ip[:idx]
@@ -157,14 +155,11 @@ func GetClientIP(req *http.Request) (ip string) {
 		ip = req.Header.Get("X-Real-IP")
 	}
 	if ip == "" && req.RemoteAddr != "" {
-		// 只保留 ip:port 的 ip
 		if req.RemoteAddr[0] == '[' {
-			// IPv6
 			if idx := strings.LastIndexByte(req.RemoteAddr, ']'); idx != -1 {
 				ip = req.RemoteAddr[1:idx]
 			}
 		} else {
-			// IPv4
 			if idx := strings.LastIndexByte(req.RemoteAddr, ':'); idx != -1 {
 				ip = req.RemoteAddr[:idx]
 			}
@@ -172,10 +167,8 @@ func GetClientIP(req *http.Request) (ip string) {
 	}
 	ip = strings.TrimSpace(ip)
 
-	// IPv6 地址展开
 	if strings.Contains(ip, ":") {
 		ip = common.ExpandIPv6Zero(ip)
 	}
 	return
 }
-

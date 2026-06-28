@@ -24,7 +24,6 @@ var (
 	HC      = HuaweiCloud{}
 )
 
-// ServiceCallback 服务回调函数类型
 type ServiceCallback func(enabledServices common.Enable, ipv4, ipv6 string) (msg []string, errs []error)
 
 func NetworkInterfaces() (map[string]string, error) {
@@ -43,7 +42,6 @@ func NetworkInterfaces() (map[string]string, error) {
 		}
 
 		for i, addrAndMask := range ipAddr {
-			// 分离 IP 和子网掩码
 			ip := addrAndMask.String()
 			if idx := strings.LastIndexByte(ip, '/'); idx != -1 {
 				ip = ip[:idx]
@@ -51,12 +49,17 @@ func NetworkInterfaces() (map[string]string, error) {
 			if strings.Contains(ip, ":") {
 				ip = common.ExpandIPv6Zero(ip)
 			}
+			// key format: "<ifname> <addr-index>", e.g. "eth0 0", "eth0 1"
+			// the index makes each address unique; fallbackIPv6 strips it to search across addresses of the same NIC
 			interfaces[face.Name+" "+strconv.Itoa(i)] = ip
 		}
 	}
 	return interfaces, nil
 }
 
+// fallbackIPv6 finds a public unicast IPv6 address. It tries preferred first, then iterates
+// other addresses on the same NIC ("eth0 0" → "eth0 1" → …), then scans all interfaces.
+// Used when the configured NIC may not always have a public IPv6 (e.g. during renumbering).
 func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool) {
 	isPublicUnicast := func(ip string) bool {
 		if !strings.Contains(ip, ":") {
@@ -70,19 +73,16 @@ func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool)
 	}
 
 	if preferred != "" {
-		// 直接匹配
 		if ip, ok := interfaces[preferred]; ok && isPublicUnicast(ip) {
 			return ip, true
 		}
 
-		// 尝试去掉末尾数字为下一步遍历做准备
 		if idx := strings.LastIndexByte(preferred, ' '); idx != -1 {
 			if _, err := strconv.Atoi(preferred[idx+1:]); err == nil {
 				preferred = preferred[:idx]
 			}
 		}
 
-		// 尝试遍历匹配 "eth0 0", "eth0 1", ...
 		for i := 0; ; i++ {
 			ip, ok := interfaces[preferred+" "+strconv.Itoa(i)]
 			if !ok {
@@ -94,7 +94,6 @@ func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool)
 		}
 	}
 
-	// 随便找一个
 	for _, ip := range interfaces {
 		if isPublicUnicast(ip) {
 			return ip, true
@@ -106,7 +105,6 @@ func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool)
 
 func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback bool) (ipv4, ipv6 string, err error) {
 	var interfaces map[string]string
-	// 若需网卡信息，则获取网卡信息并提供给用户
 	if nc.Enable && nc.IPv4 == "" && nc.IPv6 == "" {
 		interfaces, err = NetworkInterfaces()
 		if err != nil {
@@ -117,12 +115,11 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			return
 		}
 
-		err = errors.New("请打开 " + ConfDir + "/" + NetworkCardFilename + " 选择网卡填入 " +
-			ConfDir + "/" + ConfFilename + " 的 network_card")
+		err = errors.New("open " + ConfDir + "/" + NetworkCardFilename +
+			" to select a network card and set it in " + ConfDir + "/" + ConfFilename)
 		return
 	}
 
-	// 若需网卡信息，则获取网卡信息
 	if nc.Enable && (nc.IPv4 != "" || nc.IPv6 != "") {
 		interfaces, err = NetworkInterfaces()
 		if err != nil {
@@ -130,18 +127,15 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 		}
 	}
 
-	// 启用 IPv4
 	if enabled.IPv4 {
-		// 启用网卡 IPv4
 		if nc.Enable && nc.IPv4 != "" {
 			if v, ok := interfaces[nc.IPv4]; ok {
 				ipv4 = v
 			} else {
-				err = errors.New("IPv4 选择了不存在的网卡")
+				err = errors.New("ipv4: selected network card does not exist")
 				return
 			}
 		} else {
-			// 使用 API 获取 IPv4
 			if apiUrl.IPv4 == "" {
 				apiUrl.IPv4 = common.DefaultAPIUrl
 			}
@@ -166,15 +160,14 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			ipv4 = ipInfo.IP
 		}
 
+		// API returned a colon address — the caller may have pointed IPv4 URL at an IPv6 endpoint
 		if strings.Contains(ipv4, ":") {
-			err = errors.New("获取到的 IPv4 格式错误，意外获取到了 " + ipv4)
+			err = errors.New("unexpected ipv4 format: " + ipv4)
 			ipv4 = ""
 		}
 	}
 
-	// 启用 IPv6
 	if enabled.IPv6 {
-		// 启用网卡 IPv6
 		if nc.Enable && nc.IPv6 != "" {
 			var (
 				v  string
@@ -188,11 +181,10 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			if ok {
 				ipv6 = v
 			} else {
-				err = errors.New("IPv6 选择了不存在的网卡")
+				err = errors.New("ipv6: selected network card does not exist")
 				return
 			}
 		} else {
-			// 使用 API 获取 IPv6
 			if apiUrl.IPv6 == "" {
 				apiUrl.IPv6 = common.DefaultIPv6APIUrl
 			}
@@ -217,10 +209,11 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			ipv6 = ipInfo.IP
 		}
 
+		// colon presence is how we distinguish a real IPv6 address from an IPv4 returned by the wrong endpoint
 		if strings.Contains(ipv6, ":") {
 			ipv6 = common.ExpandIPv6Zero(ipv6)
 		} else {
-			err = errors.New("获取到的 IPv6 格式错误，意外获取到了 " + ipv6)
+			err = errors.New("unexpected ipv6 format: " + ipv6)
 			ipv6 = ""
 		}
 	}
@@ -228,7 +221,6 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 }
 
 func AccessCenter(ipv4, ipv6 string) {
-	// 构造请求 body
 	reqBody := common.CenterReq{
 		Token:  Client.Center.Token,
 		Enable: Client.Enable,
@@ -244,7 +236,6 @@ func AccessCenter(ipv4, ipv6 string) {
 		return
 	}
 
-	// 发送请求
 	req, err := httpNewRequest(http.MethodPost, Client.Center.APIUrl, bytes.NewReader(reqJson))
 	if err != nil {
 		log.Println(err)
@@ -260,7 +251,6 @@ func AccessCenter(ipv4, ipv6 string) {
 	}
 	defer resp.Body.Close()
 
-	// 处理结果
 	if resp.StatusCode != http.StatusOK {
 		log.Println("The status code returned by the center is", resp.StatusCode)
 	}

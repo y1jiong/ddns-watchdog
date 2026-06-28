@@ -22,18 +22,18 @@ const (
 )
 
 var (
-	confDir              = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
-	installOption        = flag.BoolP("install", "I", false, "安装服务并退出")
-	uninstallOption      = flag.BoolP("uninstall", "U", false, "卸载服务并退出")
-	enforcement          = flag.BoolP("force", "f", false, "强制检查 DNS 解析记录")
-	version              = flag.BoolP("version", "V", false, "查看当前版本并检查更新后退出")
-	initOption           = flag.StringP("init", "i", "", "有选择地初始化配置文件并退出，可以组合使用 (例 01)\n"+
+	confDir         = flag.StringP("conf", "c", "", "config directory (use quotes if path contains spaces)")
+	installOption   = flag.BoolP("install", "I", false, "install service and exit")
+	uninstallOption = flag.BoolP("uninstall", "U", false, "uninstall service and exit")
+	enforcement     = flag.BoolP("force", "f", false, "force DNS record update regardless of IP change")
+	version         = flag.BoolP("version", "V", false, "print version and check for updates, then exit")
+	initOption      = flag.StringP("init", "i", "", "selectively initialize config files and exit; can be combined (e.g. 01)\n"+
 		"0 -> "+client.ConfFilename+"\n"+
 		"1 -> "+client.DNSPodConfFilename+"\n"+
 		"2 -> "+client.AliDNSConfFilename+"\n"+
 		"3 -> "+client.CloudflareConfFilename+"\n"+
 		"4 -> "+client.HuaweiCloudConfFilename)
-	printNetworkCardInfo = flag.BoolP("network-card", "n", false, "输出网卡信息并退出")
+	printNetworkCardInfo = flag.BoolP("network-card", "n", false, "print network card info and exit")
 )
 
 func main() {
@@ -112,6 +112,9 @@ func startDaemon() {
 	runLoop()
 }
 
+// absConfDir returns an absolute path for the conf directory.
+// The service unit file records this path; a relative path would break when systemd/launchd
+// starts the daemon from a different working directory.
 func absConfDir() string {
 	dir := client.ConfDir
 	if !filepath.IsAbs(dir) {
@@ -195,7 +198,7 @@ func initConf(event string) (err error) {
 	case "4":
 		msg, err = client.HC.InitConf()
 	default:
-		err = errors.New("你初始化了一个寂寞")
+		err = errors.New("unknown init option: " + event)
 	}
 	if err != nil {
 		return

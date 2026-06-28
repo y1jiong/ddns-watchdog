@@ -34,6 +34,7 @@ func newHttpClient() *http.Client {
 	t.TLSClientConfig = &tls.Config{
 		MinVersion: tls.VersionTLS12,
 	}
+	// each check is a one-shot burst; keep-alives would hold idle TCP connections between intervals
 	t.DisableKeepAlives = true
 	return &http.Client{
 		Transport: t,
@@ -41,7 +42,6 @@ func newHttpClient() *http.Client {
 	}
 }
 
-// 内容应全小写
 const (
 	DNSPod      = "dnspod"
 	AliDNS      = "alidns"
@@ -98,7 +98,6 @@ func IsDirExistAndCreate(dirPath string) (err error) {
 	return
 }
 
-// LoadAndUnmarshal dst 参数要加 & 才能修改原变量
 func LoadAndUnmarshal(filePath string, dst any) (err error) {
 	_, err = os.Stat(filePath)
 	if err != nil {
@@ -128,6 +127,7 @@ func MarshalAndSave(content any, filePath string) (err error) {
 
 func ExpandIPv6Zero(ip string) string {
 	p := net.ParseIP(ip)
+	// net.ParseIP stores all addresses as 16 bytes; p.To4() != nil means it is an IPv4-mapped address
 	if p == nil || p.To4() != nil || len(p) != net.IPv6len {
 		return ip
 	}
@@ -159,14 +159,14 @@ func ExpandIPv6Zero(ip string) string {
 }
 
 func VersionTips(latestVersion string) {
-	fmt.Println("当前版本", Version)
-	fmt.Println("最新版本", latestVersion)
-	fmt.Println("Git Commit:", GitCommit)
-	fmt.Println("Build Time:", BuildTime)
+	fmt.Println("current version:", Version)
+	fmt.Println("latest version:", latestVersion)
+	fmt.Println("git commit:", GitCommit)
+	fmt.Println("build time:", BuildTime)
 	switch {
 	case strings.Contains(latestVersion, "N/A"):
-		fmt.Println("\n"+latestVersion+"\n需要手动检查更新，请前往", projectUrl, "查看")
+		fmt.Println("\n" + latestVersion + "\ncheck for updates manually at " + projectUrl)
 	case semver.Compare("v"+Version, "v"+latestVersion) < 0:
-		fmt.Println("\n发现新版本，请前往", projectUrl, "下载")
+		fmt.Println("\nnew version available, visit " + projectUrl + " to download")
 	}
 }

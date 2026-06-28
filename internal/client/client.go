@@ -56,7 +56,7 @@ func (conf *client) InitConf() (msg string, err error) {
 	conf.EnableIPv6Fallback = true
 	conf.CheckCycleMinutes = 0
 
-	return "初始化 " + ConfDir + "/" + ConfFilename,
+	return "initialized " + ConfDir + "/" + ConfFilename,
 		common.MarshalAndSave(conf, ConfDir+"/"+ConfFilename)
 }
 
@@ -69,18 +69,16 @@ func (conf *client) LoadConf() (err error) {
 
 	conf.applyEnvOverrides()
 
-	// 检查启用 IP 类型
 	if !conf.Enable.IPv4 && !conf.Enable.IPv6 {
-		return errors.New("请打开客户端配置文件 " + ConfDir + "/" + ConfFilename + " 启用需要使用的 IP 类型并重新启动")
+		return errors.New("no IP type enabled, edit " + ConfDir + "/" + ConfFilename + " to enable ipv4 or ipv6")
 	}
 
-	// 检查启用服务
 	if !conf.Center.Enable &&
 		!conf.Services.DNSPod &&
 		!conf.Services.AliDNS &&
 		!conf.Services.Cloudflare &&
 		!conf.Services.HuaweiCloud {
-		return errors.New("请打开客户端配置文件 " + ConfDir + "/" + ConfFilename + " 启用需要使用的服务并重新启动")
+		return errors.New("no service enabled, edit " + ConfDir + "/" + ConfFilename + " to enable a provider")
 	}
 	return
 }
@@ -144,21 +142,21 @@ func (conf *client) applyEnvOverrides() {
 func (conf *client) GetLatestVersion() (str string) {
 	resp, err := httpGet(conf.APIUrl.Version)
 	if err != nil {
-		return "N/A (请检查网络连接)"
+		return "N/A (check network connection)"
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "N/A (数据包错误)"
+		return "N/A (invalid response)"
 	}
 
 	var res common.GetIPResp
 	if err = json.Unmarshal(body, &res); err != nil {
-		return "N/A (数据包错误)"
+		return "N/A (invalid response)"
 	}
 	if res.Version == "" {
-		return "N/A (没有获取到版本信息)"
+		return "N/A (version info not found)"
 	}
 
 	return res.Version

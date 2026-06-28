@@ -22,16 +22,16 @@ type AliDNS struct {
 
 func (ad *AliDNS) InitConf() (msg string, err error) {
 	*ad = AliDNS{
-		AccessKeyId: "在 https://ram.console.aliyun.com/users 获取",
+		AccessKeyId: "get from https://ram.console.aliyun.com/users",
 		Domain:      "example.com",
 		SubDomain: common.Subdomain{
-			A:    "A记录子域名",
-			AAAA: "AAAA记录子域名",
+			A:    "subdomain for A record",
+			AAAA: "subdomain for AAAA record",
 		},
 	}
 	ad.AccessKeySecret = ad.AccessKeyId
 
-	return "初始化 " + ConfDir + "/" + AliDNSConfFilename,
+	return "initialized " + ConfDir + "/" + AliDNSConfFilename,
 		common.MarshalAndSave(ad, ConfDir+"/"+AliDNSConfFilename)
 }
 
@@ -58,37 +58,33 @@ func (ad *AliDNS) LoadConf() (err error) {
 	}
 
 	if ad.AccessKeyId == "" || ad.AccessKeySecret == "" || ad.Domain == "" || (ad.SubDomain.A == "" && ad.SubDomain.AAAA == "") {
-		return errors.New("请打开配置文件 " + ConfDir + "/" + AliDNSConfFilename + " 检查你的 access_key_id, access_key_secret, domain, sub_domain 并重新启动")
+		return errors.New("check access_key_id, access_key_secret, domain, sub_domain in " + ConfDir + "/" + AliDNSConfFilename)
 	}
 	return
 }
 
 func (ad *AliDNS) Run(enabled common.Enable, ipv4, ipv6 string) (msg []string, errs []error) {
 	if ipv4 != "" && enabled.IPv4 && ad.SubDomain.A != "" {
-		// 获取解析记录
 		recordId, recordIP, err := ad.getParseRecord(ad.SubDomain.A, "A")
 		if err != nil {
 			errs = append(errs, err)
 		} else if recordIP != ipv4 {
-			// 更新解析记录
 			if err = ad.updateParseRecord(ipv4, recordId, "A", ad.SubDomain.A); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, aliDNSPrefix+ad.SubDomain.A+"."+ad.Domain+" 已更新解析记录 "+ipv4)
+				msg = append(msg, aliDNSPrefix+ad.SubDomain.A+"."+ad.Domain+" record updated to "+ipv4)
 			}
 		}
 	}
 	if ipv6 != "" && enabled.IPv6 && ad.SubDomain.AAAA != "" {
-		// 获取解析记录
 		recordId, recordIP, err := ad.getParseRecord(ad.SubDomain.AAAA, "AAAA")
 		if err != nil {
 			errs = append(errs, err)
 		} else if recordIP != ipv6 {
-			// 更新解析记录
 			if err = ad.updateParseRecord(ipv6, recordId, "AAAA", ad.SubDomain.AAAA); err != nil {
 				errs = append(errs, err)
 			} else {
-				msg = append(msg, aliDNSPrefix+ad.SubDomain.AAAA+"."+ad.Domain+" 已更新解析记录 "+ipv6)
+				msg = append(msg, aliDNSPrefix+ad.SubDomain.AAAA+"."+ad.Domain+" record updated to "+ipv6)
 			}
 		}
 	}
@@ -120,7 +116,7 @@ func (ad *AliDNS) getParseRecord(subDomain, recordType string) (recordId, record
 	}
 
 	if recordId == "" || recordIP == "" {
-		err = errors.New(aliDNSPrefix + subDomain + "." + ad.Domain + " 的 " + recordType + " 解析记录不存在")
+		err = errors.New(aliDNSPrefix + subDomain + "." + ad.Domain + " " + recordType + " record not found")
 	}
 	return
 }

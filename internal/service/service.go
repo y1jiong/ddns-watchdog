@@ -27,6 +27,7 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) Stop(s service.Service) error {
+	// block until runFunc returns so the OS service manager gets an accurate stopped signal
 	if p.exit != nil {
 		<-p.exit
 	}
@@ -39,7 +40,8 @@ func New(name, displayName, description string, extraArgs []string, runFunc func
 		Name:        name,
 		DisplayName: displayName,
 		Description: description,
-		Arguments:   append([]string{"run"}, extraArgs...),
+		// service manager invokes: binary run <extraArgs>; main() detects "run" and calls svc.Run()
+		Arguments: append([]string{"run"}, extraArgs...),
 	}
 	s, err := service.New(&program{runFunc: runFunc}, cfg)
 	if err != nil {

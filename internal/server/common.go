@@ -37,7 +37,6 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 			return
 		}
 
-		// 初始化虚拟客户端
 		dp := client.DNSPod{
 			ID:        Services.DNSPod.ID,
 			Token:     Services.DNSPod.Token,
@@ -52,7 +51,6 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 			return
 		}
 
-		// 初始化虚拟客户端
 		ad := client.AliDNS{
 			AccessKeyId:     Services.AliDNS.AccessKeyId,
 			AccessKeySecret: Services.AliDNS.AccessKeySecret,
@@ -67,7 +65,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 			return
 		}
 
-		// 初始化虚拟客户端
+		// Cloudflare expects full domain names in its record API, unlike other providers that split subdomain + domain
 		cf := client.Cloudflare{
 			ZoneID:   Services.Cloudflare.ZoneID,
 			APIToken: Services.Cloudflare.APIToken,
@@ -84,7 +82,6 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 			return
 		}
 
-		// 初始化虚拟客户端
 		hc := client.HuaweiCloud{
 			AccessKeyId:     Services.HuaweiCloud.AccessKeyId,
 			SecretAccessKey: Services.HuaweiCloud.SecretAccessKey,
