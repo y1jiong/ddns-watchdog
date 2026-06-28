@@ -6,10 +6,7 @@ import (
 	"net/http"
 )
 
-const (
-	projName    = "ddns-watchdog-client"
-	installPath = "/etc/systemd/system/" + projName + ".service"
-)
+const projName = "ddns-watchdog-client"
 
 func httpGet(url string) (*http.Response, error) {
 	req, err := httpNewRequest(http.MethodGet, url, nil)

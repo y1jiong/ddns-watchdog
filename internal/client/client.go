@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
+	"strconv"
 )
 
 const ConfFilename = "client.json"
@@ -59,9 +61,13 @@ func (conf *client) InitConf() (msg string, err error) {
 }
 
 func (conf *client) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
+	// Missing file is allowed: Docker users configure via env vars only.
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
 		return
 	}
+	err = nil
+
+	conf.applyEnvOverrides()
 
 	// 检查启用 IP 类型
 	if !conf.Enable.IPv4 && !conf.Enable.IPv6 {
@@ -77,6 +83,62 @@ func (conf *client) LoadConf() (err error) {
 		return errors.New("请打开客户端配置文件 " + ConfDir + "/" + ConfFilename + " 启用需要使用的服务并重新启动")
 	}
 	return
+}
+
+func (conf *client) applyEnvOverrides() {
+	if v := os.Getenv("DDNS_API_URL_IPV4"); v != "" {
+		conf.APIUrl.IPv4 = v
+	}
+	if v := os.Getenv("DDNS_API_URL_IPV6"); v != "" {
+		conf.APIUrl.IPv6 = v
+	}
+	if v := os.Getenv("DDNS_API_URL_VERSION"); v != "" {
+		conf.APIUrl.Version = v
+	}
+	if v := os.Getenv("DDNS_CENTER_ENABLE"); v != "" {
+		conf.Center.Enable = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_CENTER_URL"); v != "" {
+		conf.Center.APIUrl = v
+	}
+	if v := os.Getenv("DDNS_CENTER_TOKEN"); v != "" {
+		conf.Center.Token = v
+	}
+	if v := os.Getenv("DDNS_ENABLE_IPV4"); v != "" {
+		conf.Enable.IPv4 = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_ENABLE_IPV6"); v != "" {
+		conf.Enable.IPv6 = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_NETWORK_CARD_ENABLE"); v != "" {
+		conf.NetworkCard.Enable = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_NETWORK_CARD_IPV4"); v != "" {
+		conf.NetworkCard.IPv4 = v
+	}
+	if v := os.Getenv("DDNS_NETWORK_CARD_IPV6"); v != "" {
+		conf.NetworkCard.IPv6 = v
+	}
+	if v := os.Getenv("DDNS_SERVICE_DNSPOD"); v != "" {
+		conf.Services.DNSPod = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVICE_ALIDNS"); v != "" {
+		conf.Services.AliDNS = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVICE_CLOUDFLARE"); v != "" {
+		conf.Services.Cloudflare = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVICE_HUAWEI"); v != "" {
+		conf.Services.HuaweiCloud = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_IPV6_FALLBACK"); v != "" {
+		conf.EnableIPv6Fallback = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_CHECK_CYCLE"); v != "" {
+		if n, e := strconv.Atoi(v); e == nil {
+			conf.CheckCycleMinutes = n
+		}
+	}
 }
 
 func (conf *client) GetLatestVersion() (str string) {

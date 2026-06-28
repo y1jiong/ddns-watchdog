@@ -7,10 +7,7 @@ import (
 	"net/http"
 )
 
-const (
-	projName    = "ddns-watchdog-server"
-	installPath = "/etc/systemd/system/" + projName + ".service"
-)
+const projName = "ddns-watchdog-server"
 
 var whitelist map[string]whitelistStruct
 

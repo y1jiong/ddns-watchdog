@@ -2,9 +2,11 @@ package main
 
 import (
 	"ddns-watchdog/internal/client"
+	intsvc "ddns-watchdog/internal/service"
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -13,13 +15,19 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+const (
+	svcName        = "ddns-watchdog-client"
+	svcDisplayName = "DDNS Watchdog Client"
+	svcDescription = "Dynamic DNS update client"
+)
+
 var (
-	confDir         = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
-	installOption   = flag.BoolP("install", "I", false, "安装服务并退出")
-	uninstallOption = flag.BoolP("uninstall", "U", false, "卸载服务并退出")
-	enforcement     = flag.BoolP("force", "f", false, "强制检查 DNS 解析记录")
-	version         = flag.BoolP("version", "V", false, "查看当前版本并检查更新后退出")
-	initOption      = flag.StringP("init", "i", "", "有选择地初始化配置文件并退出，可以组合使用 (例 01)\n"+
+	confDir              = flag.StringP("conf", "c", "", "指定配置文件目录 (目录有空格请放在双引号中间)")
+	installOption        = flag.BoolP("install", "I", false, "安装服务并退出")
+	uninstallOption      = flag.BoolP("uninstall", "U", false, "卸载服务并退出")
+	enforcement          = flag.BoolP("force", "f", false, "强制检查 DNS 解析记录")
+	version              = flag.BoolP("version", "V", false, "查看当前版本并检查更新后退出")
+	initOption           = flag.StringP("init", "i", "", "有选择地初始化配置文件并退出，可以组合使用 (例 01)\n"+
 		"0 -> "+client.ConfFilename+"\n"+
 		"1 -> "+client.DNSPodConfFilename+"\n"+
 		"2 -> "+client.AliDNSConfFilename+"\n"+
@@ -29,7 +37,51 @@ var (
 )
 
 func main() {
-	// 处理 flag
+	// Detect and strip positional args before pflag sees them.
+	var (
+		isRunMode     bool
+		serviceAction string
+	)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "run":
+			isRunMode = true
+			os.Args = append(os.Args[:1], os.Args[2:]...)
+		case "service":
+			if len(os.Args) > 2 {
+				serviceAction = os.Args[2]
+				os.Args = append(os.Args[:1], os.Args[3:]...)
+			}
+		}
+	}
+
+	flag.Parse()
+
+	if *confDir != "" {
+		client.ConfDir = filepath.Clean(*confDir)
+	}
+
+	// "service <action>" subcommand (v2 addition)
+	if serviceAction != "" {
+		svc, err := newService()
+		if err != nil {
+			log.Fatal(err)
+		}
+		intsvc.RunCommand(svc, serviceAction)
+		return
+	}
+
+	// "run" positional arg: invoked by the OS service manager
+	if isRunMode {
+		svc, err := newService()
+		if err != nil {
+			log.Fatal(err)
+		}
+		intsvc.Run(svc)
+		return
+	}
+
+	// Standard flag-based flow (backward compatible with v1)
 	exit, err := processFlag()
 	if err != nil {
 		log.Fatal(err)
@@ -38,29 +90,41 @@ func main() {
 		return
 	}
 
-	// 加载服务配置
 	if err = loadConf(); err != nil {
 		log.Fatal(err)
 	}
 
-	// 一次性
-	if client.Client.CheckCycleMinutes <= 0 {
-		check()
-		return
-	}
+	runLoop()
+}
 
-	// 周期循环
-	cycle := time.NewTicker(time.Duration(client.Client.CheckCycleMinutes) * time.Minute)
-	for {
-		check()
-		<-cycle.C
+func newService() (*intsvc.Svc, error) {
+	args := []string{"-c", absConfDir()}
+	return intsvc.New(svcName, svcDisplayName, svcDescription, args, startDaemon)
+}
+
+func startDaemon() {
+	if err := client.Client.LoadConf(); err != nil {
+		log.Fatal(err)
 	}
+	if err := loadConf(); err != nil {
+		log.Fatal(err)
+	}
+	runLoop()
+}
+
+func absConfDir() string {
+	dir := client.ConfDir
+	if !filepath.IsAbs(dir) {
+		if wd, err := os.Getwd(); err == nil {
+			dir = filepath.Join(wd, dir)
+		}
+	}
+	return dir
 }
 
 func processFlag() (exit bool, err error) {
-	flag.Parse()
+	// flag.Parse() already called in main()
 
-	// 打印网卡信息
 	if *printNetworkCardInfo {
 		var interfaces map[string]string
 		interfaces, err = client.NetworkInterfaces()
@@ -68,7 +132,7 @@ func processFlag() (exit bool, err error) {
 			return
 		}
 
-		var arr []string
+		arr := make([]string, 0, len(interfaces))
 		for name := range interfaces {
 			arr = append(arr, name)
 		}
@@ -80,12 +144,6 @@ func processFlag() (exit bool, err error) {
 		return true, nil
 	}
 
-	// 加载自定义配置文件目录
-	if *confDir != "" {
-		client.ConfDir = filepath.Clean(*confDir)
-	}
-
-	// 有选择地初始化配置文件
 	if *initOption != "" {
 		for _, event := range *initOption {
 			if err = initConf(string(event)); err != nil {
@@ -95,24 +153,30 @@ func processFlag() (exit bool, err error) {
 		return true, nil
 	}
 
-	// 加载客户端配置
-	// 不得不放在这个地方，因为有下面的检查版本和安装 / 卸载服务
 	if err = client.Client.LoadConf(); err != nil {
 		return
 	}
 
-	// 检查版本
 	if *version {
 		client.Client.CheckLatestVersion()
 		return true, nil
 	}
 
-	// 安装 / 卸载服务
 	switch {
 	case *installOption:
-		return true, client.Install()
+		svc, e := newService()
+		if e != nil {
+			return true, e
+		}
+		intsvc.RunCommand(svc, "install")
+		return true, nil
 	case *uninstallOption:
-		return true, client.Uninstall()
+		svc, e := newService()
+		if e != nil {
+			return true, e
+		}
+		intsvc.RunCommand(svc, "uninstall")
+		return true, nil
 	}
 	return
 }
@@ -136,7 +200,6 @@ func initConf(event string) (err error) {
 	if err != nil {
 		return
 	}
-
 	log.Println(msg)
 	return
 }
@@ -169,8 +232,20 @@ func loadConf() (err error) {
 	return
 }
 
+func runLoop() {
+	if client.Client.CheckCycleMinutes <= 0 {
+		check()
+		return
+	}
+
+	cycle := time.NewTicker(time.Duration(client.Client.CheckCycleMinutes) * time.Minute)
+	for {
+		check()
+		<-cycle.C
+	}
+}
+
 func check() {
-	// 获取 IP
 	ipv4, ipv6, err := client.GetOwnIP(client.Client.Enable, client.Client.APIUrl, client.Client.NetworkCard, client.Client.EnableIPv6Fallback)
 	if err != nil {
 		log.Println(err)
@@ -183,7 +258,6 @@ func check() {
 		return
 	}
 
-	// 进入更新流程
 	if ipv4 != client.Client.LatestIPv4 {
 		client.Client.LatestIPv4 = ipv4
 	}
@@ -213,8 +287,8 @@ func check() {
 }
 
 func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) {
-	msg, err := callback(client.Client.Enable, ipv4, ipv6)
-	for _, row := range err {
+	msg, errs := callback(client.Client.Enable, ipv4, ipv6)
+	for _, row := range errs {
 		log.Println(row)
 	}
 	for _, row := range msg {

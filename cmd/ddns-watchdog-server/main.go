@@ -4,14 +4,22 @@ import (
 	"crypto/tls"
 	"ddns-watchdog/internal/common"
 	"ddns-watchdog/internal/server"
+	intsvc "ddns-watchdog/internal/service"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
 	flag "github.com/spf13/pflag"
+)
+
+const (
+	svcName        = "ddns-watchdog-server"
+	svcDisplayName = "DDNS Watchdog Server"
+	svcDescription = "Dynamic DNS watchdog IP echo and center proxy server"
 )
 
 var (
@@ -40,7 +48,47 @@ var (
 )
 
 func main() {
-	// 处理 flag
+	var (
+		isRunMode     bool
+		serviceAction string
+	)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "run":
+			isRunMode = true
+			os.Args = append(os.Args[:1], os.Args[2:]...)
+		case "service":
+			if len(os.Args) > 2 {
+				serviceAction = os.Args[2]
+				os.Args = append(os.Args[:1], os.Args[3:]...)
+			}
+		}
+	}
+
+	flag.Parse()
+
+	if *confDir != "" {
+		server.ConfDir = filepath.Clean(*confDir)
+	}
+
+	if serviceAction != "" {
+		svc, err := newService()
+		if err != nil {
+			log.Fatal(err)
+		}
+		intsvc.RunCommand(svc, serviceAction)
+		return
+	}
+
+	if isRunMode {
+		svc, err := newService()
+		if err != nil {
+			log.Fatal(err)
+		}
+		intsvc.Run(svc)
+		return
+	}
+
 	exit, err := processFlag()
 	if err != nil {
 		log.Fatal(err)
@@ -49,52 +97,30 @@ func main() {
 		return
 	}
 
-	// 加载白名单
-	if server.Srv.CenterService {
-		if err = server.Services.LoadConf(); err != nil {
+	startServer()
+}
+
+func newService() (*intsvc.Svc, error) {
+	args := []string{"-c", absConfDir()}
+	return intsvc.New(svcName, svcDisplayName, svcDescription, args, func() {
+		if err := server.Srv.LoadConf(); err != nil {
 			log.Fatal(err)
 		}
-		// 路由绑定函数
-		http.HandleFunc(server.Srv.Route.Center, server.RespCenterReq)
-	}
+		startServer()
+	})
+}
 
-	// 路由绑定函数
-	http.HandleFunc(server.Srv.Route.GetIP, server.RespGetIPReq)
-
-	// 设置超时参数和最低 TLS 版本
-	httpSrv := http.Server{
-		Addr:              server.Srv.ServerAddr,
-		ReadTimeout:       5 * time.Second,
-		ReadHeaderTimeout: 2 * time.Second,
-		WriteTimeout:      5 * time.Second,
-		IdleTimeout:       2 * time.Second,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
+func absConfDir() string {
+	dir := server.ConfDir
+	if !filepath.IsAbs(dir) {
+		if wd, err := os.Getwd(); err == nil {
+			dir = filepath.Join(wd, dir)
+		}
 	}
-	httpSrv.SetKeepAlivesEnabled(false)
-
-	// 启动监听
-	if server.Srv.TLS.Enable {
-		log.Println("Work on", server.Srv.ServerAddr, "with TLS")
-		err = httpSrv.ListenAndServeTLS(server.Srv.TLS.CertFile, server.Srv.TLS.KeyFile)
-	} else {
-		log.Println("Work on", server.Srv.ServerAddr)
-		err = httpSrv.ListenAndServe()
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
+	return dir
 }
 
 func processFlag() (exit bool, err error) {
-	flag.Parse()
-
-	if *confDir != "" {
-		server.ConfDir = filepath.Clean(*confDir)
-	}
-
-	// 初始化配置
 	if *initOption != "" {
 		for _, event := range *initOption {
 			if err = initConf(string(event)); err != nil {
@@ -114,13 +140,11 @@ func processFlag() (exit bool, err error) {
 		if err != nil {
 			return
 		}
-
 		fmt.Print(msg)
 		return true, nil
 	}
 
 	var currentToken string
-	// 获取 token
 	switch {
 	case *token != "":
 		currentToken = *token
@@ -130,13 +154,11 @@ func processFlag() (exit bool, err error) {
 			err = errors.New("生成 token 的长度不符合要求")
 			return
 		}
-
 		currentToken = server.GenerateToken(length)
 		fmt.Println("Token: " + currentToken)
 		exit = true
 	}
 
-	// 添加 token 到白名单
 	if *add {
 		if len(*message) > 32 {
 			err = errors.New("token message 备注信息过长")
@@ -152,9 +174,7 @@ func processFlag() (exit bool, err error) {
 		if err != nil {
 			return
 		}
-
 		exit = true
-
 		switch status {
 		case server.InsertSign:
 			fmt.Printf("Added %v(%v) to whitelist.\n", *message, currentToken)
@@ -163,28 +183,34 @@ func processFlag() (exit bool, err error) {
 		}
 	}
 
-	// 若无必要，不加载配置
 	if exit {
 		return
 	}
 
-	// 加载配置
 	if err = server.Srv.LoadConf(); err != nil {
 		return
 	}
 
-	// 版本信息
 	if *version {
 		server.Srv.CheckLatestVersion()
 		return true, nil
 	}
 
-	// 安装 / 卸载服务
 	switch {
 	case *installOption:
-		return true, server.Install()
+		svc, e := newService()
+		if e != nil {
+			return true, e
+		}
+		intsvc.RunCommand(svc, "install")
+		return true, nil
 	case *uninstallOption:
-		return true, server.Uninstall()
+		svc, e := newService()
+		if e != nil {
+			return true, e
+		}
+		intsvc.RunCommand(svc, "uninstall")
+		return true, nil
 	}
 	return
 }
@@ -204,7 +230,41 @@ func initConf(event string) (err error) {
 	if err != nil {
 		return
 	}
-
 	log.Println(msg)
 	return
+}
+
+func startServer() {
+	if server.Srv.CenterService {
+		if err := server.Services.LoadConf(); err != nil {
+			log.Fatal(err)
+		}
+		http.HandleFunc(server.Srv.Route.Center, server.RespCenterReq)
+	}
+
+	http.HandleFunc(server.Srv.Route.GetIP, server.RespGetIPReq)
+
+	httpSrv := http.Server{
+		Addr:              server.Srv.ServerAddr,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       2 * time.Second,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+	httpSrv.SetKeepAlivesEnabled(false)
+
+	var err error
+	if server.Srv.TLS.Enable {
+		log.Println("Work on", server.Srv.ServerAddr, "with TLS")
+		err = httpSrv.ListenAndServeTLS(server.Srv.TLS.CertFile, server.Srv.TLS.KeyFile)
+	} else {
+		log.Println("Work on", server.Srv.ServerAddr)
+		err = httpSrv.ListenAndServe()
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 }

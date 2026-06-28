@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 )
 
 const ConfFilename = "server.json"
@@ -46,7 +47,42 @@ func (conf *server) InitConf() (msg string, err error) {
 }
 
 func (conf *server) LoadConf() (err error) {
-	return common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf)
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
+		return
+	}
+	err = nil
+	conf.applyEnvOverrides()
+	return
+}
+
+func (conf *server) applyEnvOverrides() {
+	if v := os.Getenv("DDNS_SERVER_ADDR"); v != "" {
+		conf.ServerAddr = v
+	}
+	if v := os.Getenv("DDNS_SERVER_IS_ROOT"); v != "" {
+		conf.IsRootServer = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVER_ROOT_URL"); v != "" {
+		conf.RootServerUrl = v
+	}
+	if v := os.Getenv("DDNS_SERVER_CENTER"); v != "" {
+		conf.CenterService = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVER_ROUTE_GETIP"); v != "" {
+		conf.Route.GetIP = v
+	}
+	if v := os.Getenv("DDNS_SERVER_ROUTE_CENTER"); v != "" {
+		conf.Route.Center = v
+	}
+	if v := os.Getenv("DDNS_SERVER_TLS"); v != "" {
+		conf.TLS.Enable = v == "true" || v == "1"
+	}
+	if v := os.Getenv("DDNS_SERVER_TLS_CERT"); v != "" {
+		conf.TLS.CertFile = v
+	}
+	if v := os.Getenv("DDNS_SERVER_TLS_KEY"); v != "" {
+		conf.TLS.KeyFile = v
+	}
 }
 
 func (conf *server) GetLatestVersion() (str string) {

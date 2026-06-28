@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+	"os"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	dns "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2"
@@ -40,9 +41,27 @@ func (hc *HuaweiCloud) InitConf() (msg string, err error) {
 }
 
 func (hc *HuaweiCloud) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+HuaweiCloudConfFilename, &hc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+HuaweiCloudConfFilename, &hc); err != nil && !os.IsNotExist(err) {
 		return
 	}
+	err = nil
+
+	if v := os.Getenv("DDNS_HUAWEI_AK_ID"); v != "" {
+		hc.AccessKeyId = v
+	}
+	if v := os.Getenv("DDNS_HUAWEI_AK_SECRET"); v != "" {
+		hc.SecretAccessKey = v
+	}
+	if v := os.Getenv("DDNS_HUAWEI_ZONE_NAME"); v != "" {
+		hc.ZoneName = v
+	}
+	if v := os.Getenv("DDNS_HUAWEI_DOMAIN_A"); v != "" {
+		hc.Domain.A = v
+	}
+	if v := os.Getenv("DDNS_HUAWEI_DOMAIN_AAAA"); v != "" {
+		hc.Domain.AAAA = v
+	}
+
 	if hc.AccessKeyId == "" || hc.SecretAccessKey == "" || hc.ZoneName == "" || (hc.Domain.A == "" && hc.Domain.AAAA == "") {
 		return errors.New("请打开配置文件 " + ConfDir + "/" + HuaweiCloudConfFilename + " 检查你的 access_key_id, secret_access_key, domain 并重新启动")
 	}

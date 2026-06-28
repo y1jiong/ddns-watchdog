@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -38,8 +39,25 @@ func (dpc *DNSPod) InitConf() (msg string, err error) {
 }
 
 func (dpc *DNSPod) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil && !os.IsNotExist(err) {
 		return
+	}
+	err = nil
+
+	if v := os.Getenv("DDNS_DNSPOD_ID"); v != "" {
+		dpc.ID = v
+	}
+	if v := os.Getenv("DDNS_DNSPOD_TOKEN"); v != "" {
+		dpc.Token = v
+	}
+	if v := os.Getenv("DDNS_DNSPOD_DOMAIN"); v != "" {
+		dpc.Domain = v
+	}
+	if v := os.Getenv("DDNS_DNSPOD_SUB_A"); v != "" {
+		dpc.SubDomain.A = v
+	}
+	if v := os.Getenv("DDNS_DNSPOD_SUB_AAAA"); v != "" {
+		dpc.SubDomain.AAAA = v
 	}
 
 	if dpc.ID == "" || dpc.Token == "" || dpc.Domain == "" || (dpc.SubDomain.A == "" && dpc.SubDomain.AAAA == "") {

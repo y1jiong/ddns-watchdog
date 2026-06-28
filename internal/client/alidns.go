@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+	"os"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 )
@@ -35,8 +36,25 @@ func (ad *AliDNS) InitConf() (msg string, err error) {
 }
 
 func (ad *AliDNS) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil && !os.IsNotExist(err) {
 		return
+	}
+	err = nil
+
+	if v := os.Getenv("DDNS_ALIDNS_AK_ID"); v != "" {
+		ad.AccessKeyId = v
+	}
+	if v := os.Getenv("DDNS_ALIDNS_AK_SECRET"); v != "" {
+		ad.AccessKeySecret = v
+	}
+	if v := os.Getenv("DDNS_ALIDNS_DOMAIN"); v != "" {
+		ad.Domain = v
+	}
+	if v := os.Getenv("DDNS_ALIDNS_SUB_A"); v != "" {
+		ad.SubDomain.A = v
+	}
+	if v := os.Getenv("DDNS_ALIDNS_SUB_AAAA"); v != "" {
+		ad.SubDomain.AAAA = v
 	}
 
 	if ad.AccessKeyId == "" || ad.AccessKeySecret == "" || ad.Domain == "" || (ad.SubDomain.A == "" && ad.SubDomain.AAAA == "") {

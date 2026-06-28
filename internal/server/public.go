@@ -5,10 +5,8 @@ import (
 	"ddns-watchdog/internal/common"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -181,55 +179,3 @@ func GetClientIP(req *http.Request) (ip string) {
 	return
 }
 
-func Install() (err error) {
-	if common.IsWindows() {
-		return errors.New("windows 暂不支持安装到系统")
-	}
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	serviceContent := []byte(
-		"[Unit]\n" +
-			"Description=" + projName + " Service\n" +
-			"Wants=network-online.target\n" +
-			"After=network-online.target\n\n" +
-			"[Service]\n" +
-			"Type=simple\n" +
-			"WorkingDirectory=" + wd +
-			"\nExecStart=" + exe + " -c " + ConfDir +
-			"\nRestart=on-failure\n" +
-			"RestartSec=2\n" +
-			"LimitNOFILE=65535\n\n" +
-			"[Install]\n" +
-			"WantedBy=multi-user.target\n",
-	)
-	if err = os.WriteFile(installPath, serviceContent, 0o644); err != nil {
-		return
-	}
-	log.Println("可以使用 systemctl 控制", projName, "服务了")
-	return
-}
-
-func Uninstall() (err error) {
-	if common.IsWindows() {
-		return errors.New("windows 暂不支持安装到系统")
-	}
-
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	if err = os.Remove(installPath); err != nil {
-		return
-	}
-	log.Println("卸载服务成功\n若要完全删除，请移步到", exe, "和", ConfDir, "完全删除")
-	return
-}

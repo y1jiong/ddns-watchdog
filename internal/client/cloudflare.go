@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/bitly/go-simplejson"
 )
@@ -46,8 +47,25 @@ func (cfc *Cloudflare) InitConf() (msg string, err error) {
 }
 
 func (cfc *Cloudflare) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil && !os.IsNotExist(err) {
 		return
+	}
+	err = nil
+
+	if v := os.Getenv("DDNS_CLOUDFLARE_ZONE_ID"); v != "" {
+		cfc.ZoneID = v
+	}
+	if v := os.Getenv("DDNS_CLOUDFLARE_TOKEN"); v != "" {
+		cfc.APIToken = v
+	}
+	if v := os.Getenv("DDNS_CLOUDFLARE_DOMAIN_A"); v != "" {
+		cfc.Domain.A = v
+	}
+	if v := os.Getenv("DDNS_CLOUDFLARE_DOMAIN_AAAA"); v != "" {
+		cfc.Domain.AAAA = v
+	}
+	if v := os.Getenv("DDNS_CLOUDFLARE_PROXIED"); v != "" {
+		cfc.Proxied = v == "true" || v == "1"
 	}
 
 	if cfc.ZoneID == "" || cfc.APIToken == "" || (cfc.Domain.A == "" && cfc.Domain.AAAA == "") {

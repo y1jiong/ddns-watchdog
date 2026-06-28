@@ -1,0 +1,51 @@
+services:
+  ddns-watchdog-client:
+    image: ghcr.io/y1jiong/ddns-watchdog-client
+    restart: unless-stopped
+    environment:
+      # IP type to enable
+      DDNS_ENABLE_IPV4: "true"
+      DDNS_ENABLE_IPV6: "false"
+      # Check interval in minutes (0 = run once and exit)
+      DDNS_CHECK_CYCLE: "5"
+      # IPv6 fallback when preferred NIC has no global unicast address
+      DDNS_IPV6_FALLBACK: "true"
+
+      # --- Choose ONE provider and set its credentials ---
+
+      # DNSPod (Tencent Cloud)
+      # DDNS_SERVICE_DNSPOD: "true"
+      # DDNS_DNSPOD_ID: "your-id"
+      # DDNS_DNSPOD_TOKEN: "your-token"
+      # DDNS_DNSPOD_DOMAIN: "example.com"
+      # DDNS_DNSPOD_SUB_A: "@"
+      # DDNS_DNSPOD_SUB_AAAA: "@"
+
+      # AliDNS (Alibaba Cloud)
+      # DDNS_SERVICE_ALIDNS: "true"
+      # DDNS_ALIDNS_AK_ID: "your-access-key-id"
+      # DDNS_ALIDNS_AK_SECRET: "your-access-key-secret"
+      # DDNS_ALIDNS_DOMAIN: "example.com"
+      # DDNS_ALIDNS_SUB_A: "@"
+      # DDNS_ALIDNS_SUB_AAAA: "@"
+
+      # Cloudflare
+      # DDNS_SERVICE_CLOUDFLARE: "true"
+      # DDNS_CLOUDFLARE_ZONE_ID: "your-zone-id"
+      # DDNS_CLOUDFLARE_TOKEN: "your-api-token"
+      # DDNS_CLOUDFLARE_DOMAIN_A: "sub.example.com"
+      # DDNS_CLOUDFLARE_DOMAIN_AAAA: "sub.example.com"
+      # DDNS_CLOUDFLARE_PROXIED: "false"
+
+      # Huawei Cloud
+      # DDNS_SERVICE_HUAWEI: "true"
+      # DDNS_HUAWEI_AK_ID: "your-access-key-id"
+      # DDNS_HUAWEI_AK_SECRET: "your-secret-access-key"
+      # DDNS_HUAWEI_ZONE_NAME: "example.com."
+      # DDNS_HUAWEI_DOMAIN_A: "@.example.com."
+      # DDNS_HUAWEI_DOMAIN_AAAA: "@.example.com."
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

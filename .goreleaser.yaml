@@ -1,0 +1,111 @@
+version: 2
+
+builds:
+  - id: client
+    binary: ddns-watchdog-client
+    main: ./cmd/ddns-watchdog-client/
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -buildid=
+      - -X "ddns-watchdog/internal/common.GitCommit={{.Commit}}"
+      - -X "ddns-watchdog/internal/common.BuildTime={{.Date}}"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goamd64:
+      - v1
+      - v3
+    goarm:
+      - "7"
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goamd64: v3
+      - goos: windows
+        goarch: arm
+
+  - id: server
+    binary: ddns-watchdog-server
+    main: ./cmd/ddns-watchdog-server/
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -buildid=
+      - -X "ddns-watchdog/internal/common.GitCommit={{.Commit}}"
+      - -X "ddns-watchdog/internal/common.BuildTime={{.Date}}"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goamd64:
+      - v1
+      - v3
+    goarm:
+      - "7"
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goamd64: v3
+      - goos: windows
+        goarch: arm
+
+archives:
+  - id: client
+    ids: [client]
+    formats:
+      - tar.xz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch -}}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+      {{- if and (eq .Arch "amd64") (ne .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+
+  - id: server
+    ids: [server]
+    formats:
+      - tar.xz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch -}}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+      {{- if and (eq .Arch "amd64") (ne .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  footer: |
+    ---
+    [![GitHub Downloads](https://img.shields.io/github/downloads/{{ .Env.GITHUB_REPOSITORY }}/{{ .Env.GITHUB_REF_NAME }}/total)]()
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -27,63 +26,6 @@ var (
 
 // ServiceCallback 服务回调函数类型
 type ServiceCallback func(enabledServices common.Enable, ipv4, ipv6 string) (msg []string, errs []error)
-
-func Install() (err error) {
-	if common.IsWindows() {
-		return errors.New("windows 暂不支持安装到系统")
-	}
-	if Client.CheckCycleMinutes == 0 {
-		err = errors.New("设置一下 " + ConfDir + "/" + ConfFilename + " 的 check_cycle_minutes 吧")
-		return
-	}
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	serviceContent := []byte(
-		"[Unit]\n" +
-			"Description=" + projName + " Service\n" +
-			"Wants=network-online.target\n" +
-			"After=network-online.target\n\n" +
-			"[Service]\n" +
-			"Type=simple\n" +
-			"WorkingDirectory=" + wd +
-			"\nExecStart=" + exe + " -c " + ConfDir +
-			"\nRestart=on-failure\n" +
-			"RestartSec=2\n" +
-			"LimitNOFILE=65535\n\n" +
-			"[Install]\n" +
-			"WantedBy=multi-user.target\n",
-	)
-	if err = os.WriteFile(installPath, serviceContent, 0o644); err != nil {
-		return
-	}
-	log.Println("可以使用 systemctl 管理", projName, "服务了")
-	return
-}
-
-func Uninstall() (err error) {
-	if common.IsWindows() {
-		return errors.New("windows 暂不支持安装到系统")
-	}
-
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	if err = os.Remove(installPath); err != nil {
-		return
-	}
-	log.Println("卸载服务成功\n若要完全删除，请移步到", exe, "和", ConfDir, "完全删除")
-	return
-}
 
 func NetworkInterfaces() (map[string]string, error) {
 	interfaces := make(map[string]string)

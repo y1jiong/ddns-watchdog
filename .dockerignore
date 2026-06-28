@@ -1,0 +1,14 @@
+.git
+.github
+dist/
+docs/
+test/
+docs-internal/
+*.md
+Dockerfile
+docker-compose.yml
+.goreleaser.yaml
+Makefile
+client.mk
+server.mk
+scripts/
