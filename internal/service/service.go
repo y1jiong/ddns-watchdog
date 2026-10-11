@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kardianos/service"
@@ -101,7 +102,7 @@ func RunCommand(s *Svc, action string) {
 			}
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown service action: %s\n", action)
+		fmt.Fprintf(os.Stderr, "unknown service action: %s (want one of: %s)\n", action, strings.Join(Actions, ", "))
 		os.Exit(1)
 	}
 

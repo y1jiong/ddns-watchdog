@@ -72,3 +72,45 @@ func TestStopWithoutStart(t *testing.T) {
 		t.Fatalf("Stop: %v", err)
 	}
 }
+
+// Only "run" and a complete, known "service <action>" are accepted; everything
+// else must fail instead of silently starting the daemon in the foreground.
+func TestParseSubcommand(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    Subcommand
+		wantErr bool
+	}{
+		{name: "no subcommand", args: nil},
+		{name: "run", args: []string{"run"}, want: Subcommand{RunMode: true}},
+		{name: "run with extra arg", args: []string{"run", "extra"}, wantErr: true},
+		{name: "service install", args: []string{"service", "install"}, want: Subcommand{Action: "install"}},
+		{name: "service uninstall", args: []string{"service", "uninstall"}, want: Subcommand{Action: "uninstall"}},
+		{name: "service start", args: []string{"service", "start"}, want: Subcommand{Action: "start"}},
+		{name: "service stop", args: []string{"service", "stop"}, want: Subcommand{Action: "stop"}},
+		{name: "service status", args: []string{"service", "status"}, want: Subcommand{Action: "status"}},
+		{name: "service without action", args: []string{"service"}, wantErr: true},
+		{name: "service with unknown action", args: []string{"service", "reload"}, wantErr: true},
+		{name: "service with extra arg", args: []string{"service", "install", "extra"}, wantErr: true},
+		{name: "misspelled subcommand", args: []string{"servcie", "install"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseSubcommand(tt.args)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("ParseSubcommand(%q) = %+v, want an error", tt.args, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ParseSubcommand(%q): %v", tt.args, err)
+			}
+			if got != tt.want {
+				t.Errorf("ParseSubcommand(%q) = %+v, want %+v", tt.args, got, tt.want)
+			}
+		})
+	}
+}

@@ -129,7 +129,13 @@ func (hc *HuaweiCloud) getZoneId() (err error) {
 	if err != nil {
 		return
 	}
+	if response.Zones == nil {
+		return errors.New(huaweiCloudPrefix + "empty zone list response")
+	}
 	for _, v := range *response.Zones {
+		if v.Name == nil || v.Id == nil {
+			continue
+		}
 		if *v.Name == hc.ZoneName {
 			hc.ZoneId = *v.Id
 		}
@@ -170,11 +176,20 @@ func (hc *HuaweiCloud) getParseRecord(domain, recordType string) (recordSetId, r
 		return
 	}
 
+	if response.Recordsets == nil {
+		err = errors.New(huaweiCloudPrefix + "empty record set response")
+		return
+	}
 	for _, v := range *response.Recordsets {
+		if v.Name == nil || v.Type == nil || v.Id == nil {
+			continue
+		}
 		if *v.Name == domain && *v.Type == recordType {
 			recordSetId = *v.Id
-			for _, vv := range *v.Records {
-				recordIP = vv
+			if v.Records != nil {
+				for _, vv := range *v.Records {
+					recordIP = vv
+				}
 			}
 			break
 		}

@@ -127,13 +127,24 @@ func (dpc *DNSPod) getParseRecord(subDomain, recordType string) (recordId, recor
 	}
 
 	for _, value := range records {
-		element := value.(map[string]any)
-		if element["name"].(string) == subDomain && element["type"].(string) == recordType {
-			recordId = element["id"].(string)
-			recordIP = element["value"].(string)
-			recordLineId = element["line_id"].(string)
-			break
+		element, isObject := value.(map[string]any)
+		if !isObject {
+			continue
 		}
+
+		name, ok := mapString(element, "name")
+		if !ok || name != subDomain {
+			continue
+		}
+		elementType, ok := mapString(element, "type")
+		if !ok || elementType != recordType {
+			continue
+		}
+
+		recordId, _ = mapString(element, "id")
+		recordIP, _ = mapString(element, "value")
+		recordLineId, _ = mapString(element, "line_id")
+		break
 	}
 
 	if recordId == "" || recordIP == "" || recordLineId == "" {

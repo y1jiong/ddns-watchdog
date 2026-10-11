@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -59,10 +58,6 @@ type Subdomain struct {
 	AAAA string `json:"aaaa"`
 }
 
-type GeneralClient interface {
-	Run(Enable, string, string) ([]string, []error)
-}
-
 type GetIPResp struct {
 	IP      string `json:"ip"`
 	Version string `json:"latest_version"`
@@ -81,10 +76,6 @@ type IPs struct {
 
 type GeneralResp struct {
 	Message string `json:"message"`
-}
-
-func IsWindows() bool {
-	return runtime.GOOS == "windows"
 }
 
 func IsDirExistAndCreate(dirPath string) (err error) {

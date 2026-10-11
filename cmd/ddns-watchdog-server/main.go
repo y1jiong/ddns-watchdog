@@ -49,39 +49,31 @@ var (
 )
 
 func main() {
-	var (
-		isRunMode     bool
-		serviceAction string
-	)
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "run":
-			isRunMode = true
-			os.Args = append(os.Args[:1], os.Args[2:]...)
-		case "service":
-			if len(os.Args) > 2 {
-				serviceAction = os.Args[2]
-				os.Args = append(os.Args[:1], os.Args[3:]...)
-			}
-		}
-	}
-
 	flag.Parse()
+
+	// Positional subcommands: "run" (invoked by the OS service manager) and
+	// "service <action>". Anything else is rejected instead of being ignored.
+	sub, err := intsvc.ParseSubcommand(flag.Args())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	if *confDir != "" {
 		server.ConfDir = filepath.Clean(*confDir)
 	}
 
-	if serviceAction != "" {
+	if sub.Action != "" {
 		svc, err := newService()
 		if err != nil {
 			log.Fatal(err)
 		}
-		intsvc.RunCommand(svc, serviceAction)
+		intsvc.RunCommand(svc, sub.Action)
 		return
 	}
 
-	if isRunMode {
+	if sub.RunMode {
 		svc, err := newService()
 		if err != nil {
 			log.Fatal(err)

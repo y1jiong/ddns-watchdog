@@ -4,6 +4,7 @@ import (
 	"ddns-watchdog/internal/common"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -86,5 +87,41 @@ func TestLoadConfPartialFileMergesDefaults(t *testing.T) {
 	}
 	if Client.APIUrl.IPv4 != common.DefaultAPIUrl {
 		t.Errorf("api_url.ipv4 = %q, want the default %q", Client.APIUrl.IPv4, common.DefaultAPIUrl)
+	}
+}
+
+// A fresh, entirely unconfigured run must say which file to edit and how to
+// create it, instead of only reporting that something is missing.
+func TestLoadConfMissingFileHint(t *testing.T) {
+	clearClientEnv(t)
+
+	origConfDir, origClient := ConfDir, Client
+	defer func() { ConfDir, Client = origConfDir, origClient }()
+
+	ConfDir = t.TempDir() // no client.json
+	Client = client{}
+
+	err := Client.LoadConf()
+	if err == nil {
+		t.Fatal("LoadConf succeeded without any IP type enabled")
+	}
+	for _, want := range []string{"no IP type enabled", ConfFilename, "-i 0"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q does not mention %q", err, want)
+		}
+	}
+}
+
+// mapString must never panic on a response shape the provider did not promise.
+func TestMapString(t *testing.T) {
+	obj := map[string]any{"str": "value", "num": 1, "null": nil}
+
+	if got, ok := mapString(obj, "str"); !ok || got != "value" {
+		t.Errorf("mapString(str) = %q, %v; want \"value\", true", got, ok)
+	}
+	for _, key := range []string{"num", "null", "absent"} {
+		if got, ok := mapString(obj, key); ok {
+			t.Errorf("mapString(%q) = %q, true; want false for a non-string field", key, got)
+		}
 	}
 }

@@ -144,12 +144,23 @@ func (cfc *Cloudflare) getParseRecord(domain, recordType string) (domainId, reco
 	}
 
 	for _, v := range records {
-		element := v.(map[string]any)
-		if element["name"].(string) == domain && element["type"].(string) == recordType {
-			domainId = element["id"].(string)
-			recordIP = element["content"].(string)
-			break
+		element, isObject := v.(map[string]any)
+		if !isObject {
+			continue
 		}
+
+		name, ok := mapString(element, "name")
+		if !ok || name != domain {
+			continue
+		}
+		elementType, ok := mapString(element, "type")
+		if !ok || elementType != recordType {
+			continue
+		}
+
+		domainId, _ = mapString(element, "id")
+		recordIP, _ = mapString(element, "content")
+		break
 	}
 
 	if domainId == "" || recordIP == "" {
@@ -211,10 +222,23 @@ func (cfc *Cloudflare) updateParseRecord(ipAddr, domainId, recordType, domain st
 		}
 
 		for _, value := range errorsArr {
-			element := value.(map[string]any)
-			errCode := element["code"].(json.Number)
-			errMsg := element["message"].(string)
-			errorsMsg = errorsMsg + cloudflarePrefix + errCode.String() + ": " + errMsg + "\n"
+			element, isObject := value.(map[string]any)
+			if !isObject {
+				continue
+			}
+
+			code := ""
+			switch v := element["code"].(type) {
+			case json.Number:
+				code = v.String()
+			case string:
+				code = v
+			}
+			if code != "" {
+				code += ": "
+			}
+			errMsg, _ := mapString(element, "message")
+			errorsMsg = errorsMsg + cloudflarePrefix + code + errMsg + "\n"
 		}
 
 		err = errors.New(errorsMsg)

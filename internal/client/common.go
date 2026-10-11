@@ -24,3 +24,12 @@ func httpNewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req.Header.Set("User-Agent", projName+"/"+common.Version)
 	return req, nil
 }
+
+// mapString reads a string field from a decoded JSON object. ok is false when the
+// field is missing or holds another type, which is what happens if a provider
+// changes the shape of its response. Callers skip or report such entries instead
+// of panicking on a failed type assertion.
+func mapString(m map[string]any, key string) (s string, ok bool) {
+	s, ok = m[key].(string)
+	return
+}

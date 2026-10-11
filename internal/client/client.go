@@ -71,15 +71,19 @@ func (conf *client) LoadConf() (err error) {
 	conf.applyDefaults()
 
 	// Missing file is allowed: Docker users configure via env vars only.
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
-		return
+	missing := false
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+		missing = true
 	}
 	err = nil
 
 	conf.applyEnvOverrides()
 
 	if !conf.Enable.IPv4 && !conf.Enable.IPv6 {
-		return errors.New("no IP type enabled, edit " + ConfDir + "/" + ConfFilename + " to enable ipv4 or ipv6")
+		return errors.New(confHint(`no IP type enabled: set "enable"."ipv4" or "enable"."ipv6" to true`, missing))
 	}
 
 	if !conf.Center.Enable &&
@@ -87,9 +91,19 @@ func (conf *client) LoadConf() (err error) {
 		!conf.Services.AliDNS &&
 		!conf.Services.Cloudflare &&
 		!conf.Services.HuaweiCloud {
-		return errors.New("no service enabled, edit " + ConfDir + "/" + ConfFilename + " to enable a provider")
+		return errors.New(confHint(`no service enabled: enable a provider in "services" or set "center"."enable" to true`, missing))
 	}
 	return
+}
+
+// confHint says where to fix a config problem, and how to create the file when it
+// does not exist yet - the state a fresh "nothing configured" run ends up in.
+func confHint(msg string, missing bool) string {
+	hint := "; edit " + ConfDir + "/" + ConfFilename
+	if missing {
+		hint += " (run with -i 0 to create it)"
+	}
+	return msg + hint
 }
 
 func (conf *client) applyEnvOverrides() {

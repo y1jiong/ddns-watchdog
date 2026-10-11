@@ -42,8 +42,9 @@ services:
       # DDNS_HUAWEI_AK_ID: "your-access-key-id"
       # DDNS_HUAWEI_AK_SECRET: "your-secret-access-key"
       # DDNS_HUAWEI_ZONE_NAME: "example.com."
-      # DDNS_HUAWEI_DOMAIN_A: "@.example.com."
-      # DDNS_HUAWEI_DOMAIN_AAAA: "@.example.com."
+      # domain.a/aaaa are full record names with a trailing dot (not subdomains)
+      # DDNS_HUAWEI_DOMAIN_A: "home.example.com."
+      # DDNS_HUAWEI_DOMAIN_AAAA: "home.example.com."
     logging:
       driver: json-file
       options:

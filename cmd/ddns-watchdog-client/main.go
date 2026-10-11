@@ -38,35 +38,29 @@ var (
 )
 
 func main() {
-	// Detect and strip positional args before pflag sees them.
-	var (
-		isRunMode     bool
-		serviceAction string
-	)
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "run":
-			isRunMode = true
-			os.Args = append(os.Args[:1], os.Args[2:]...)
-		case "service":
-			if len(os.Args) > 2 {
-				serviceAction = os.Args[2]
-				os.Args = append(os.Args[:1], os.Args[3:]...)
-			}
-		}
-	}
-
 	flag.Parse()
+
+	// Positional subcommands: "run" (invoked by the OS service manager) and
+	// "service <action>". Anything else is rejected instead of being ignored.
+	sub, err := intsvc.ParseSubcommand(flag.Args())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	if *confDir != "" {
 		client.ConfDir = filepath.Clean(*confDir)
 	}
 
 	// "service <action>" subcommand (v2 addition)
-	if serviceAction != "" {
-		if serviceAction == "install" {
-			if e := installService(); e != nil {
-				log.Fatal(e)
+	if sub.Action != "" {
+		if sub.Action == "install" {
+			if err = client.Client.LoadConf(); err != nil {
+				log.Fatal(err)
+			}
+			if err = installService(); err != nil {
+				log.Fatal(err)
 			}
 			return
 		}
@@ -74,12 +68,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		intsvc.RunCommand(svc, serviceAction)
+		intsvc.RunCommand(svc, sub.Action)
 		return
 	}
 
 	// "run" positional arg: invoked by the OS service manager
-	if isRunMode {
+	if sub.RunMode {
 		svc, err := newService()
 		if err != nil {
 			log.Fatal(err)
@@ -109,13 +103,11 @@ func newService() (*intsvc.Svc, error) {
 	return intsvc.New(svcName, svcDisplayName, svcDescription, args, startDaemon)
 }
 
-// installService loads the client config and installs the OS service.
+// installService installs the OS service. The caller must have loaded the client
+// config already.
 // A service whose check cycle is <= 0 would run a single check and exit, which is
 // never what "install a service" should mean, so that is refused (same as v1).
 func installService() error {
-	if err := client.Client.LoadConf(); err != nil {
-		return err
-	}
 	if client.Client.CheckCycleMinutes <= 0 {
 		return errors.New("check_cycle_minutes in " + client.ConfDir + "/" + client.ConfFilename +
 			" must be greater than 0 to install the service")
