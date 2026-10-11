@@ -49,6 +49,9 @@ var (
 )
 
 func main() {
+	flag.Usage = func() {
+		intsvc.PrintUsage(os.Stderr, filepath.Base(os.Args[0]), flag.PrintDefaults)
+	}
 	flag.Parse()
 
 	// Positional subcommands: "run" (invoked by the OS service manager) and

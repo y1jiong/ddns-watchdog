@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 )
@@ -51,4 +52,19 @@ func ParseSubcommand(args []string) (Subcommand, error) {
 
 func unexpectedArg(arg string) error {
 	return fmt.Errorf("unexpected argument %q", arg)
+}
+
+// PrintUsage writes the command line synopsis. pflag's own usage only lists the
+// flags, so the positional subcommands have to be spelled out here.
+func PrintUsage(w io.Writer, cmd string, printFlags func()) {
+	fmt.Fprintf(w, "Usage:\n")
+	fmt.Fprintf(w, "  %s [flags]\n", cmd)
+	fmt.Fprintf(w, "  %s run [flags]\n", cmd)
+	fmt.Fprintf(w, "  %s service <action> [flags]\n", cmd)
+	fmt.Fprintf(w, "\nSubcommands:\n")
+	fmt.Fprintf(w, "  run                 run in the foreground, the way the OS service manager starts it\n")
+	fmt.Fprintf(w, "  service <action>    manage the OS service: %s\n", strings.Join(Actions, ", "))
+	fmt.Fprintf(w, "                      (-I and -U are shortcuts for install and uninstall)\n")
+	fmt.Fprintf(w, "\nFlags:\n")
+	printFlags()
 }

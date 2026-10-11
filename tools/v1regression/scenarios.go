@@ -183,10 +183,19 @@ var cliScenarios = []Scenario{
 	},
 	{
 		Group: "cli", Name: "unknown-flag",
-		Doc: "an unknown flag fails the same way",
+		Doc: "an unknown flag fails the same way and prints usage",
 		Run: func(t *Target) (*Observation, error) {
 			res := t.Run("client", "-Z", "-c", t.Dir)
-			return observe(t, res), nil
+			obs := observe(t, res)
+			// Only the parser's error is compared: the body of the usage output is
+			// documentation, and the subcommand synopsis it gained has its own unit
+			// test. Whether usage was printed at all is still asserted.
+			usage := strings.Contains(res.Stderr, "Usage")
+			if first, _, ok := strings.Cut(obs.Stderr, "\n"); ok {
+				obs.Stderr = first
+			}
+			obs.Stderr += fmt.Sprintf("\nusage_printed=%v", usage)
+			return obs, nil
 		},
 	},
 	{

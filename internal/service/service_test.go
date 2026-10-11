@@ -1,7 +1,9 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"strings"
 	"testing"
 	"time"
 )
@@ -112,5 +114,25 @@ func TestParseSubcommand(t *testing.T) {
 				t.Errorf("ParseSubcommand(%q) = %+v, want %+v", tt.args, got, tt.want)
 			}
 		})
+	}
+}
+
+// pflag's own usage only lists the flags, so the positional subcommands have to
+// be spelled out separately; this pins that they are.
+func TestPrintUsageListsSubcommands(t *testing.T) {
+	var buf bytes.Buffer
+	PrintUsage(&buf, "cmd", func() { buf.WriteString("  -x, --x   flag help\n") })
+
+	out := buf.String()
+	for _, want := range []string{
+		"cmd [flags]",
+		"cmd run [flags]",
+		"cmd service <action> [flags]",
+		"manage the OS service: install, uninstall, start, stop, status",
+		"-x, --x",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("usage does not contain %q:\n%s", want, out)
+		}
 	}
 }
