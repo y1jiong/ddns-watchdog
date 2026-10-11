@@ -28,7 +28,7 @@ func TestGetLatestVersionCachesUpstream(t *testing.T) {
 	Srv = server{RootServerUrl: rootSrv.URL}
 	versionCache, versionCached = "", time.Time{}
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		if got := Srv.GetLatestVersion(); got != "9.9.9" {
 			t.Fatalf("GetLatestVersion = %q, want 9.9.9", got)
 		}

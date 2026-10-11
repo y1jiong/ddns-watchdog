@@ -34,12 +34,12 @@ func renderReport(ref1, ref2 string, targets []*Target, results []Result) string
 	b.WriteString("\n")
 
 	b.WriteString("## Deliberate differences (checked)\n\n")
-	any := false
+	a := false
 	for _, r := range results {
 		if len(r.Differences) == 0 {
 			continue
 		}
-		any = true
+		a = true
 		fmt.Fprintf(&b, "### `%s`\n\n%s\n\n", r.Scenario, r.Scenario.Doc)
 		for _, d := range r.Differences {
 			fmt.Fprintf(&b, "- **%s** — %s\n", d.Field, d.Why)
@@ -48,7 +48,7 @@ func renderReport(ref1, ref2 string, targets []*Target, results []Result) string
 		}
 		b.WriteString("\n")
 	}
-	if !any {
+	if !a {
 		b.WriteString("_none_\n\n")
 	}
 

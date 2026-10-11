@@ -118,8 +118,7 @@ func (t *Target) RunDir(dir, name string, args ...string) *CmdResult {
 
 	exit := 0
 	if err := cmd.Run(); err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			exit = ee.ExitCode()
 		} else {
 			exit = -1
@@ -580,7 +579,7 @@ func copyWorktree(dst string) error {
 	if err != nil {
 		return err
 	}
-	for _, rel := range strings.Split(string(out), "\x00") {
+	for rel := range strings.SplitSeq(string(out), "\x00") {
 		if rel == "" {
 			continue
 		}
