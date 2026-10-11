@@ -12,3 +12,4 @@ Makefile
 client.mk
 server.mk
 scripts/
+tools/

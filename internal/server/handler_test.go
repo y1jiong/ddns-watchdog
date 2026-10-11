@@ -11,7 +11,7 @@ import (
 )
 
 // useTempConf points the package at an empty config directory with a clean
-// server config and restores all package state afterwards.
+// server config and restores all package state afterward.
 func useTempConf(t *testing.T) {
 	t.Helper()
 
