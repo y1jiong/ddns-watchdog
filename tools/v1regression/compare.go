@@ -59,16 +59,14 @@ func runScenario(sc Scenario, targets []*Target) Result {
 			res.Err = err
 			return res
 		}
-		defer t.stopProcs()
 
-		o, err := sc.Run(t)
+		o, err := runTarget(sc, t)
 		if err != nil {
 			res.Err = fmt.Errorf("%s: %w", t.Ref, err)
 			res.V1 = firstOrNil(obs, 0)
 			res.V2 = firstOrNil(obs, 1)
 			return res
 		}
-		t.normalizeObservation(o)
 		obs = append(obs, o)
 	}
 
@@ -87,6 +85,20 @@ func runScenario(sc Scenario, targets []*Target) Result {
 		}
 	}
 	return res
+}
+
+// runTarget runs the scenario for one revision and stops whatever it's left
+// running, even when it fails half-way. The cleanup is scoped to this call rather
+// than to the caller's loop, so one revision's processes cannot outlive its turn.
+func runTarget(sc Scenario, t *Target) (*Observation, error) {
+	defer t.stopProcs()
+
+	o, err := sc.Run(t)
+	if err != nil {
+		return nil, err
+	}
+	t.normalizeObservation(o)
+	return o, nil
 }
 
 func firstOrNil(obs []*Observation, i int) *Observation {
@@ -131,7 +143,7 @@ func splitLines(s string) []string {
 		return nil
 	}
 	var out []string
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		line = strings.TrimRight(line, " \t\r")
 		if line != "" {
 			out = append(out, line)
@@ -233,12 +245,9 @@ func multisetSubtract(a, b []string) []string {
 // pairUp lines up the lines that exist on only one side, so a rule can describe
 // "v1 said X, v2 says Y".
 func pairUp(onlyV1, onlyV2 []string) [][2]string {
-	n := len(onlyV1)
-	if len(onlyV2) > n {
-		n = len(onlyV2)
-	}
+	n := max(len(onlyV2), len(onlyV1))
 	var out [][2]string
-	for i := 0; i < n; i++ {
+	for i := range n {
 		var l, r string
 		if i < len(onlyV1) {
 			l = onlyV1[i]

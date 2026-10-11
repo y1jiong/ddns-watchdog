@@ -187,14 +187,12 @@ var cliScenarios = []Scenario{
 		Run: func(t *Target) (*Observation, error) {
 			res := t.Run("client", "-Z", "-c", t.Dir)
 			obs := observe(t, res)
-			// Only the parser's error is compared: the body of the usage output is
-			// documentation, and the subcommand synopsis it gained has its own unit
-			// test. Whether usage was printed at all is still asserted.
-			usage := strings.Contains(res.Stderr, "Usage")
-			if first, _, ok := strings.Cut(obs.Stderr, "\n"); ok {
-				obs.Stderr = first
-			}
-			obs.Stderr += fmt.Sprintf("\nusage_printed=%v", usage)
+			// pflag prints the usage body first and the parse error last. The body is
+			// documentation (the subcommand synopsis it gained has its own unit test),
+			// so compare the error and only assert that usage was printed at all.
+			lines := strings.Split(strings.TrimRight(res.Stderr, "\n"), "\n")
+			obs.Stderr = fmt.Sprintf("%s\nusage_printed=%v",
+				lines[len(lines)-1], strings.Contains(res.Stderr, "Usage"))
 			return obs, nil
 		},
 	},
