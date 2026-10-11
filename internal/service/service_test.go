@@ -73,8 +73,8 @@ func TestStopWithoutStart(t *testing.T) {
 	}
 }
 
-// Only "run" and a complete, known "service <action>" are accepted; everything
-// else must fail instead of silently starting the daemon in the foreground.
+// Only "run" and a complete, known "service <action>" are accepted; anything else
+// is an error, so a typo cannot fall through to the plain CLI flow.
 func TestParseSubcommand(t *testing.T) {
 	tests := []struct {
 		name    string

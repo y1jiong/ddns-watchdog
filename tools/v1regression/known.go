@@ -101,13 +101,13 @@ var translations = []Translation{
 }
 
 var intended = []Intended{
-	// Batch A rewrote the "nothing is configured" errors so they name the JSON
-	// keys to set and, when the file is missing, how to create it.
+	// v2 names the JSON keys to set in the "nothing is configured" errors and, when
+	// the file is missing, how to create it.
 	{
 		Scenario: "nothing-enabled", Field: "stderr",
 		V1Match: "启用需要使用的 IP 类型",
 		V2Match: `no IP type enabled: set "enable"."ipv4"`,
-		Why:     "round-2 batch A: config errors now name the keys to change (v2 adds detail, exit code unchanged)",
+		Why:     "v2 names the keys to change in config errors; the exit code is the same",
 	},
 	// v2 can be configured entirely through environment variables, which is what
 	// makes the Docker deployment possible; v1 required a JSON file.
@@ -136,36 +136,36 @@ var intended = []Intended{
 	{
 		Scenario: "dnspod-no-credentials", Field: "stderr",
 		V1Match: "请打开配置文件", V2Match: "check id, token, domain, sub_domain in",
-		Why: "round-2 batch A: provider config errors name the fields to set (exit code unchanged)",
+		Why: "v2 names the fields to set in provider config errors; the exit code is the same",
 	},
 	{
 		Scenario: "cloudflare-no-credentials", Field: "stderr",
 		V1Match: "请打开配置文件", V2Match: "check zone_id, api_token, domain in",
-		Why: "round-2 batch A: provider config errors name the fields to set (exit code unchanged)",
+		Why: "v2 names the fields to set in provider config errors; the exit code is the same",
 	},
 	// v1 silently ignored -D when the token already existed, which mixed a new
 	// provider or subdomain with the old domain; v2 applies it.
 	{
 		Scenario: "whitelist-cli", Field: "file:whitelist.json",
 		V1Match: `"domain": "example.com"`, V2Match: `"domain": "other.com"`,
-		Why: "round-1 fix: -D now updates the domain of an existing whitelist entry (v1 ignored it)",
+		Why: "v2 applies -D to an existing whitelist entry; v1 kept the stored domain",
 	},
 	// v2 applies the documented defaults when server.json is absent, which is what
 	// makes environment-only deployment possible; v1 refused to start.
 	{
 		Scenario: "startup-without-config", Field: "server_log",
 		V1Match: "stat <DIR>/server.json: no such file", V2Match: "Work on <ADDR>",
-		Why: "round-1 fix: v2 starts with the documented defaults when server.json is missing",
+		Why: "v2 starts from the documented defaults when server.json is missing; v1 refuses to start",
 	},
 	{
 		Scenario: "startup-without-config", Field: "responses",
 		V1Match: "SERVER NOT READY", V2Match: "GET / -> 200",
-		Why: "round-1 fix: v2 serves the echo endpoint without a config file; v1 exits first",
+		Why: "v2 serves the echo endpoint without a config file; v1 exits before listening",
 	},
 	{
 		Scenario: "startup-without-config", Field: "responses",
 		V1Match: "ERROR Get", V2Match: "",
-		Why: "round-1 fix: v2 serves the echo endpoint without a config file; v1 is not listening",
+		Why: "v2 serves the echo endpoint without a config file; v1 never listens",
 	},
 	// --- configuration compatibility (tools/v1regression compat scenarios) ---
 	// An older v1 file predates the enable_ipv6_fallback key. v1 left it at the Go
@@ -181,32 +181,32 @@ var intended = []Intended{
 	{
 		Scenario: "echo-wrong-method", Field: "responses",
 		V1Match: "405 ct= body=", V2Match: "method not allowed, use GET",
-		Why: "round-2 batch B: rejections now carry a JSON body (status code unchanged)",
+		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "is not enabled on this server",
-		Why: "round-2 batch B: rejections now carry a JSON body (status code unchanged)",
+		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "token is disabled",
-		Why: "round-2 batch B: rejections now carry a JSON body (status code unchanged)",
+		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "invalid token",
-		Why: "round-2 batch B: rejections now carry a JSON body (status code unchanged)",
+		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "500 ct= body=", V2Match: "400 ct=application/json",
-		Why: "round-2 batch B: an unreadable request body is a client error (400, with a message) instead of 500",
+		Why: "v2 treats an unreadable request body as a client error (400 with a message); v1 answered 500 without a body",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "405 ct= body=", V2Match: "method not allowed, use POST",
-		Why: "round-2 batch B: rejections now carry a JSON body (status code unchanged)",
+		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
 	},
 	{
 		Scenario: "no-config-file", Field: "requests",

@@ -111,7 +111,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 
 // centerResp turns a provider run into the status to report to the client: 502
 // when the provider failed, so the client knows the records were not updated and
-// retries on its next cycle instead of assuming they are up to date.
+// retries on its next cycle.
 func centerResp(msg []string, errs []error) (httpStatus int, respBody common.GeneralResp) {
 	for _, v := range msg {
 		respBody.Message += v + "\n"

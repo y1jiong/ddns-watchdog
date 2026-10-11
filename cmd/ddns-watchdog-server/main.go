@@ -52,7 +52,7 @@ func main() {
 	flag.Parse()
 
 	// Positional subcommands: "run" (invoked by the OS service manager) and
-	// "service <action>". Anything else is rejected instead of being ignored.
+	// "service <action>". An unknown or incomplete one is an error.
 	sub, err := intsvc.ParseSubcommand(flag.Args())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

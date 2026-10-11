@@ -41,7 +41,7 @@ func main() {
 	flag.Parse()
 
 	// Positional subcommands: "run" (invoked by the OS service manager) and
-	// "service <action>". Anything else is rejected instead of being ignored.
+	// "service <action>". An unknown or incomplete one is an error.
 	sub, err := intsvc.ParseSubcommand(flag.Args())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -53,7 +53,7 @@ func main() {
 		client.ConfDir = filepath.Clean(*confDir)
 	}
 
-	// "service <action>" subcommand (v2 addition)
+	// "service <action>" subcommand
 	if sub.Action != "" {
 		if sub.Action == "install" {
 			if err = client.Client.LoadConf(); err != nil {
@@ -82,7 +82,7 @@ func main() {
 		return
 	}
 
-	// Standard flag-based flow (backward compatible with v1)
+	// Standard flag-based flow
 	exit, err := processFlag()
 	if err != nil {
 		log.Fatal(err)
@@ -106,7 +106,7 @@ func newService() (*intsvc.Svc, error) {
 // installService installs the OS service. The caller must have loaded the client
 // config already.
 // A service whose check cycle is <= 0 would run a single check and exit, which is
-// never what "install a service" should mean, so that is refused (same as v1).
+// never what "install a service" should mean, so that is refused.
 func installService() error {
 	if client.Client.CheckCycleMinutes <= 0 {
 		return errors.New("check_cycle_minutes in " + client.ConfDir + "/" + client.ConfFilename +

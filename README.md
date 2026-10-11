@@ -51,7 +51,8 @@ After installing or downloading the binary:
 # Initialize config files
 ./ddns-watchdog-client -i 01
 
-# Edit conf/client.json and your provider's JSON, then install the service
+# Edit conf/client.json and your provider's JSON (check_cycle_minutes must be
+# greater than 0), then install the service
 sudo ./ddns-watchdog-client -I
 
 # Manage the service
@@ -59,7 +60,7 @@ sudo systemctl enable --now ddns-watchdog-client
 sudo systemctl status ddns-watchdog-client
 ```
 
-Or use the `service` subcommand (v2):
+Or use the `service` subcommand:
 
 ```bash
 sudo ./ddns-watchdog-client service install

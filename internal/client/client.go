@@ -57,9 +57,10 @@ func (conf *client) InitConf() (msg string, err error) {
 }
 
 // applyDefaults seeds the values InitConf() writes into a new config file.
-// LoadConf runs it before unmarshalling so that a missing or partial file (Docker
-// env-only setups) behaves like the generated template instead of leaving zero
-// values - notably enable_ipv6_fallback, which is documented as defaulting to true.
+// LoadConf runs it before unmarshalling, so a missing or partial file (for
+// example a Docker deployment configured from the environment) behaves like the
+// generated template. Notably, enable_ipv6_fallback is documented as defaulting
+// to true.
 func (conf *client) applyDefaults() {
 	conf.APIUrl.IPv4 = common.DefaultAPIUrl
 	conf.APIUrl.IPv6 = common.DefaultIPv6APIUrl

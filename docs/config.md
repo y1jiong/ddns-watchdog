@@ -2,7 +2,13 @@
 
 All config files live in the config directory (`./conf/` by default, override with `-c <dir>`).
 
-Environment variables override the corresponding JSON file value. If no JSON file exists, built-in defaults are used. This lets you configure the client entirely via environment variables for Docker deployments.
+Environment variables override the corresponding JSON file value.
+
+A missing `client.json` or `server.json` is not an error: the defaults listed
+below apply to it, so such a deployment can be configured entirely through
+environment variables (that is how the Docker image is used). The provider files
+have no defaults, so every value they need must come either from the provider's
+JSON file or from the environment.
 
 **Priority:** CLI flag > environment variable > JSON file value > built-in default
 
@@ -35,6 +41,10 @@ Controls IP detection, DNS provider selection, and update interval.
 > Note: installing the client as a system service (`-I` / `service install`) requires
 > `check_cycle_minutes` to be greater than 0, otherwise the service would run a single
 > check and exit immediately.
+>
+> A check whose update could not be delivered (network failure, rejected token,
+> provider error) is retried on the next check instead of being skipped until the
+> address changes again.
 
 **Example `client.json`:**
 
@@ -201,3 +211,21 @@ Manage entries with server CLI flags:
 A running server picks the file up as soon as it changes, so a token added or
 deleted this way starts or stops working immediately - restarting the server is
 not required.
+
+`-a` writes the fields you pass and leaves the rest of an existing entry alone, so
+updating one record does not reset the others. `-s`, `-D`, `-A`, `--AAAA` and `-m`
+are all optional on an update.
+
+How the center interprets `-D`, `-A` and `--AAAA` depends on the provider, because
+the providers address records differently:
+
+| Provider | `-D` | `-A` / `--AAAA` |
+|---|---|---|
+| `dnspod`, `alidns` | root domain, e.g. `example.com` | subdomain, e.g. `@` or `home` |
+| `cloudflare` | root domain | subdomain; the center combines them into `home.example.com` |
+| `huaweicloud` | zone name **with a trailing dot**, e.g. `example.com.` | full record name, e.g. `home.example.com.` |
+
+The center answers a client with a JSON body: `403` for an unknown or disabled
+token, `403` when the provider is not enabled on the server, `400` for an
+unreadable request and `502` when the provider rejected the update. A `200` means
+every requested record was updated or already correct.

@@ -96,7 +96,7 @@ func TestLoadConfPartialFileMergesDefaults(t *testing.T) {
 }
 
 // A fresh, entirely unconfigured run must say which file to edit and how to
-// create it, instead of only reporting that something is missing.
+// create it.
 func TestLoadConfMissingFileHint(t *testing.T) {
 	clearClientEnv(t)
 
@@ -131,8 +131,8 @@ func TestMapString(t *testing.T) {
 	}
 }
 
-// A provider config file that is missing must be reported as a missing file, the
-// way v1 reported it, and not as a list of unset fields.
+// A provider config file that is missing is reported as a missing file, not as a
+// list of unset fields.
 func TestProviderLoadConfReportsMissingFile(t *testing.T) {
 	clearClientEnv(t)
 

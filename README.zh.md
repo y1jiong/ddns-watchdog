@@ -51,7 +51,8 @@ docker compose up -d
 # 初始化配置文件
 ./ddns-watchdog-client -i 01
 
-# 编辑 conf/client.json 和服务商配置文件，然后安装服务
+# 编辑 conf/client.json 和服务商配置文件（check_cycle_minutes 需大于 0），
+# 然后安装服务
 sudo ./ddns-watchdog-client -I
 
 # 管理服务
@@ -59,7 +60,7 @@ sudo systemctl enable --now ddns-watchdog-client
 sudo systemctl status ddns-watchdog-client
 ```
 
-也可以使用 v2 新增的 `service` 子命令：
+也可以使用 `service` 子命令：
 
 ```bash
 sudo ./ddns-watchdog-client service install
