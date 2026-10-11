@@ -70,6 +70,9 @@ sudo ./ddns-watchdog-client service status
 sudo ./ddns-watchdog-client service uninstall
 ```
 
+On Windows the service manager restarts the service 120 seconds after an
+unexpected exit.
+
 ## Quick Start
 
 ```bash

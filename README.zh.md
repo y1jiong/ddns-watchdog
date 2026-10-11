@@ -70,6 +70,8 @@ sudo ./ddns-watchdog-client service status
 sudo ./ddns-watchdog-client service uninstall
 ```
 
+在 Windows 上，服务意外退出后由服务管理器在 120 秒后重启。
+
 ## 快速上手
 
 ```bash

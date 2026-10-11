@@ -57,17 +57,36 @@ func (p *program) Stop(_ service.Service) error {
 	return nil
 }
 
-// New creates a service. extraArgs are appended to the binary command line when the service manager starts it.
-// runFunc must return when ctx is canceled; Stop cancels ctx and waits (up to stopTimeout) for that to happen.
-func New(name, displayName, description string, extraArgs []string, runFunc func(context.Context)) (*Svc, error) {
-	cfg := &service.Config{
+// config describes the service to the OS service manager.
+func config(name, displayName, description string, extraArgs []string) *service.Config {
+	return &service.Config{
 		Name:        name,
 		DisplayName: displayName,
 		Description: description,
 		// service manager invokes: binary run <extraArgs>; main() detects "run" and calls svc.Run()
 		Arguments: append([]string{"run"}, extraArgs...),
+		// Windows: a service that terminated without reporting itself stopped is
+		// failed, and the service manager restarts it 120s later (the delay the
+		// library's systemd unit sets as RestartSec); the failure count is forgotten
+		// after a day without failures. The library installs a single recovery action,
+		// so this delay applies to the first, second and every later failure alike.
+		// Other systems ignore these keys.
+		//
+		// The names and values are the library's, declared in a file it only builds for
+		// Windows, so they are spelled out here; a typo would make the library fall
+		// back to its defaults silently.
+		Option: service.KeyValue{
+			"OnFailure":              "restart",
+			"OnFailureDelayDuration": "120s",
+			"OnFailureResetPeriod":   86400,
+		},
 	}
-	s, err := service.New(&program{runFunc: runFunc}, cfg)
+}
+
+// New creates a service. extraArgs are appended to the binary command line when the service manager starts it.
+// runFunc must return when ctx is canceled; Stop cancels ctx and waits (up to stopTimeout) for that to happen.
+func New(name, displayName, description string, extraArgs []string, runFunc func(context.Context)) (*Svc, error) {
+	s, err := service.New(&program{runFunc: runFunc}, config(name, displayName, description, extraArgs))
 	if err != nil {
 		return nil, err
 	}

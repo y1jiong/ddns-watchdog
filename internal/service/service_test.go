@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -134,5 +135,28 @@ func TestPrintUsageListsSubcommands(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("usage does not contain %q:\n%s", want, out)
 		}
+	}
+}
+
+// A crashed Windows service must come back on its own, and a service that has
+// been healthy for a day starts counting failures from zero again.
+//
+// The literals below are the names and values the library reads; spelling them out
+// keeps this assertion independent of the config.
+func TestConfigRestartsOnFailure(t *testing.T) {
+	cfg := config("n", "display", "description", []string{"-c", "/conf"})
+
+	for key, want := range map[string]any{
+		"OnFailure":              "restart",
+		"OnFailureDelayDuration": "120s",
+		"OnFailureResetPeriod":   86400,
+	} {
+		if got := cfg.Option[key]; got != want {
+			t.Errorf("Option[%q] = %v, want %v", key, got, want)
+		}
+	}
+
+	if want := []string{"run", "-c", "/conf"}; !slices.Equal(cfg.Arguments, want) {
+		t.Errorf("Arguments = %v, want %v", cfg.Arguments, want)
 	}
 }
