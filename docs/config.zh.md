@@ -212,11 +212,11 @@
 
 center 如何解释 `-D`、`-A`、`--AAAA` 取决于服务商，因为各家寻址记录的方式不同：
 
-| 服务商 | `-D` | `-A` / `--AAAA` |
-|---|---|---|
-| `dnspod`、`alidns` | 根域名，如 `example.com` | 子域名，如 `@` 或 `home` |
-| `cloudflare` | 根域名 | 子域名；center 会拼成 `home.example.com` |
-| `huaweicloud` | **带末尾点的** 域名，如 `example.com.` | 完整记录名，如 `home.example.com.` |
+| 服务商             | `-D`                                   | `-A` / `--AAAA`                          |
+|--------------------|----------------------------------------|------------------------------------------|
+| `dnspod`、`alidns` | 根域名，如 `example.com`               | 子域名，如 `@` 或 `home`                 |
+| `cloudflare`       | 根域名                                 | 子域名；center 会拼成 `home.example.com` |
+| `huaweicloud`      | **带末尾点的** 域名，如 `example.com.` | 完整记录名，如 `home.example.com.`       |
 
 center 返回给客户端的一律是 JSON：token 不存在或被禁用返回 `403`，服务端未启用该服务商
 返回 `403`，请求体无法解析返回 `400`，服务商拒绝更新返回 `502`。返回 `200` 表示请求的

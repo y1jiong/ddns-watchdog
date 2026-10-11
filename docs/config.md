@@ -219,11 +219,11 @@ are all optional on an update.
 How the center interprets `-D`, `-A` and `--AAAA` depends on the provider, because
 the providers address records differently:
 
-| Provider | `-D` | `-A` / `--AAAA` |
-|---|---|---|
-| `dnspod`, `alidns` | root domain, e.g. `example.com` | subdomain, e.g. `@` or `home` |
-| `cloudflare` | root domain | subdomain; the center combines them into `home.example.com` |
-| `huaweicloud` | zone name **with a trailing dot**, e.g. `example.com.` | full record name, e.g. `home.example.com.` |
+| Provider           | `-D`                                                   | `-A` / `--AAAA`                                             |
+|--------------------|--------------------------------------------------------|-------------------------------------------------------------|
+| `dnspod`, `alidns` | root domain, e.g. `example.com`                        | subdomain, e.g. `@` or `home`                               |
+| `cloudflare`       | root domain                                            | subdomain; the center combines them into `home.example.com` |
+| `huaweicloud`      | zone name **with a trailing dot**, e.g. `example.com.` | full record name, e.g. `home.example.com.`                  |
 
 The center answers a client with a JSON body: `403` for an unknown or disabled
 token, `403` when the provider is not enabled on the server, `400` for an

@@ -117,7 +117,7 @@ sudo ./ddns-watchdog-client service uninstall
 ```bash
 ./ddns-watchdog-server -i 012                                                            # 初始化服务器配置
 ./ddns-watchdog-server -g -t <token>                                                     # 生成 token
-./ddns-watchdog-server -a -t <token> -s dnspod -D example.com -A @ -m "home"            # 添加到白名单
+./ddns-watchdog-server -a -t <token> -s dnspod -D example.com -A @ -m "home"             # 添加到白名单
 ./ddns-watchdog-server                                                                   # 启动服务器
 ```
 

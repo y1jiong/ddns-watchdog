@@ -117,7 +117,7 @@ The optional `ddns-watchdog-server` binary provides:
 ```bash
 ./ddns-watchdog-server -i 012                                                        # initialize server configs
 ./ddns-watchdog-server -g -t <token>                                                 # generate a token
-./ddns-watchdog-server -a -t <token> -s dnspod -D example.com -A @ -m "home"        # add token to whitelist
+./ddns-watchdog-server -a -t <token> -s dnspod -D example.com -A @ -m "home"         # add token to whitelist
 ./ddns-watchdog-server                                                               # start server
 ```
 
