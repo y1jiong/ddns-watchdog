@@ -47,8 +47,16 @@ func (cfc *Cloudflare) InitConf() (msg string, err error) {
 }
 
 func (cfc *Cloudflare) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil && !os.IsNotExist(err) {
-		return
+	// A missing file is allowed: the provider may be configured through
+	// environment variables alone. missingFile keeps the stat error so that a
+	// config which is still empty afterward reports the missing file rather than
+	// a list of unset fields.
+	var missingFile error
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+		missingFile = err
 	}
 	err = nil
 
@@ -69,6 +77,9 @@ func (cfc *Cloudflare) LoadConf() (err error) {
 	}
 
 	if cfc.ZoneID == "" || cfc.APIToken == "" || (cfc.Domain.A == "" && cfc.Domain.AAAA == "") {
+		if missingFile != nil {
+			return missingFile
+		}
 		return errors.New("check zone_id, api_token, domain in " + ConfDir + "/" + CloudflareConfFilename)
 	}
 	return

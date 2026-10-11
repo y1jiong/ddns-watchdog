@@ -36,8 +36,16 @@ func (ad *AliDNS) InitConf() (msg string, err error) {
 }
 
 func (ad *AliDNS) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil && !os.IsNotExist(err) {
-		return
+	// A missing file is allowed: the provider may be configured through
+	// environment variables alone. missingFile keeps the stat error so that a
+	// config which is still empty afterward reports the missing file rather than
+	// a list of unset fields.
+	var missingFile error
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+		missingFile = err
 	}
 	err = nil
 
@@ -58,6 +66,9 @@ func (ad *AliDNS) LoadConf() (err error) {
 	}
 
 	if ad.AccessKeyId == "" || ad.AccessKeySecret == "" || ad.Domain == "" || (ad.SubDomain.A == "" && ad.SubDomain.AAAA == "") {
+		if missingFile != nil {
+			return missingFile
+		}
 		return errors.New("check access_key_id, access_key_secret, domain, sub_domain in " + ConfDir + "/" + AliDNSConfFilename)
 	}
 	return

@@ -39,8 +39,16 @@ func (dpc *DNSPod) InitConf() (msg string, err error) {
 }
 
 func (dpc *DNSPod) LoadConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil && !os.IsNotExist(err) {
-		return
+	// A missing file is allowed: the provider may be configured through
+	// environment variables alone. missingFile keeps the stat error so that a
+	// config which is still empty afterward reports the missing file rather than
+	// a list of unset fields.
+	var missingFile error
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+		missingFile = err
 	}
 	err = nil
 
@@ -61,6 +69,9 @@ func (dpc *DNSPod) LoadConf() (err error) {
 	}
 
 	if dpc.ID == "" || dpc.Token == "" || dpc.Domain == "" || (dpc.SubDomain.A == "" && dpc.SubDomain.AAAA == "") {
+		if missingFile != nil {
+			return missingFile
+		}
 		return errors.New("check id, token, domain, sub_domain in " + ConfDir + "/" + DNSPodConfFilename)
 	}
 	return

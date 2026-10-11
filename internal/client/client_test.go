@@ -19,6 +19,11 @@ func clearClientEnv(t *testing.T) {
 		"DDNS_NETWORK_CARD_ENABLE", "DDNS_NETWORK_CARD_IPV4", "DDNS_NETWORK_CARD_IPV6",
 		"DDNS_SERVICE_DNSPOD", "DDNS_SERVICE_ALIDNS", "DDNS_SERVICE_CLOUDFLARE", "DDNS_SERVICE_HUAWEI",
 		"DDNS_IPV6_FALLBACK", "DDNS_CHECK_CYCLE",
+		"DDNS_DNSPOD_ID", "DDNS_DNSPOD_TOKEN", "DDNS_DNSPOD_DOMAIN", "DDNS_DNSPOD_SUB_A", "DDNS_DNSPOD_SUB_AAAA",
+		"DDNS_ALIDNS_AK_ID", "DDNS_ALIDNS_AK_SECRET", "DDNS_ALIDNS_DOMAIN", "DDNS_ALIDNS_SUB_A", "DDNS_ALIDNS_SUB_AAAA",
+		"DDNS_CLOUDFLARE_ZONE_ID", "DDNS_CLOUDFLARE_TOKEN", "DDNS_CLOUDFLARE_DOMAIN_A", "DDNS_CLOUDFLARE_DOMAIN_AAAA",
+		"DDNS_CLOUDFLARE_PROXIED",
+		"DDNS_HUAWEI_AK_ID", "DDNS_HUAWEI_AK_SECRET", "DDNS_HUAWEI_ZONE_NAME", "DDNS_HUAWEI_DOMAIN_A", "DDNS_HUAWEI_DOMAIN_AAAA",
 	} {
 		t.Setenv(k, "")
 	}
@@ -123,5 +128,48 @@ func TestMapString(t *testing.T) {
 		if got, ok := mapString(obj, key); ok {
 			t.Errorf("mapString(%q) = %q, true; want false for a non-string field", key, got)
 		}
+	}
+}
+
+// A provider config file that is missing must be reported as a missing file, the
+// way v1 reported it, and not as a list of unset fields.
+func TestProviderLoadConfReportsMissingFile(t *testing.T) {
+	clearClientEnv(t)
+
+	origConfDir, origDP := ConfDir, DP
+	defer func() { ConfDir, DP = origConfDir, origDP }()
+
+	ConfDir = t.TempDir() // no dnspod.json
+	DP = DNSPod{}
+
+	err := DP.LoadConf()
+	if err == nil {
+		t.Fatal("LoadConf accepted a missing dnspod.json")
+	}
+	if !strings.Contains(err.Error(), "no such file or directory") {
+		t.Errorf("error %q does not report the missing file", err)
+	}
+}
+
+// ...but a provider configured entirely through environment variables must still
+// load without the file, which is what the Docker deployment relies on.
+func TestProviderLoadConfEnvOnly(t *testing.T) {
+	clearClientEnv(t)
+	t.Setenv("DDNS_DNSPOD_ID", "12345")
+	t.Setenv("DDNS_DNSPOD_TOKEN", "abcdef0123456789")
+	t.Setenv("DDNS_DNSPOD_DOMAIN", "example.com")
+	t.Setenv("DDNS_DNSPOD_SUB_A", "home")
+
+	origConfDir, origDP := ConfDir, DP
+	defer func() { ConfDir, DP = origConfDir, origDP }()
+
+	ConfDir = t.TempDir() // no dnspod.json
+	DP = DNSPod{}
+
+	if err := DP.LoadConf(); err != nil {
+		t.Fatalf("LoadConf with environment-only config: %v", err)
+	}
+	if DP.ID != "12345" || DP.Domain != "example.com" || DP.SubDomain.A != "home" {
+		t.Errorf("environment overrides were not applied: %+v", DP)
 	}
 }
