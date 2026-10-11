@@ -8,20 +8,11 @@ import (
 	"net/http"
 )
 
-func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Cache-Control", "no-cache")
-
-	if req.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	info := common.GetIPResp{
-		IP:      GetClientIP(req),
-		Version: Srv.GetLatestVersion(),
-	}
-
-	sendJson, err := json.Marshal(info)
+// writeJson sends body as a JSON response with the given status code. Every
+// response, including a rejection, carries a body so that a client can report why
+// the request was not served.
+func writeJson(w http.ResponseWriter, status int, body any) {
+	respJson, err := json.Marshal(body)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -29,80 +20,68 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 
-	_, err = w.Write(sendJson)
-	if err != nil {
+	if _, err = w.Write(respJson); err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache")
+
+	if req.Method != http.MethodGet {
+		writeJson(w, http.StatusMethodNotAllowed, common.GeneralResp{Message: "method not allowed, use GET"})
 		return
 	}
+
+	writeJson(w, http.StatusOK, common.GetIPResp{
+		IP:      GetClientIP(req),
+		Version: Srv.GetLatestVersion(),
+	})
 }
 
 func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
 	if req.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeJson(w, http.StatusMethodNotAllowed, common.GeneralResp{Message: "method not allowed, use POST"})
 		return
 	}
 
 	bodyJson, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		writeJson(w, http.StatusBadRequest, common.GeneralResp{Message: "cannot read request body"})
 		return
 	}
 
 	var body common.CenterReq
 	if err = json.Unmarshal(bodyJson, &body); err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		writeJson(w, http.StatusBadRequest, common.GeneralResp{Message: "invalid request body"})
 		return
 	}
 
 	if len(body.Token) > 127 {
-		w.WriteHeader(http.StatusForbidden)
+		writeJson(w, http.StatusForbidden, common.GeneralResp{Message: "invalid token"})
 		return
 	}
 
-	if v, ok := whitelist[body.Token]; ok {
-		if !v.Enable {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-	} else {
-		w.WriteHeader(http.StatusForbidden)
+	instance, ok := getWhitelistEntry(body.Token)
+	if !ok {
+		writeJson(w, http.StatusForbidden, common.GeneralResp{Message: "invalid token"})
+		return
+	}
+	if !instance.Enable {
+		writeJson(w, http.StatusForbidden, common.GeneralResp{Message: "token is disabled"})
 		return
 	}
 
-	httpStatus, respBody, err := doVirtualClient(body, whitelist[body.Token])
-	if err != nil {
-		return
+	httpStatus, respBody := doVirtualClient(body, instance)
+	writeJson(w, httpStatus, respBody)
+
+	if httpStatus == http.StatusOK {
+		log.Printf("%v(%v) access successfully.\n", instance.Description, GetClientIP(req))
 	}
-
-	if httpStatus != http.StatusOK {
-		if httpStatus == http.StatusInternalServerError {
-			log.Println(err)
-		}
-		w.WriteHeader(httpStatus)
-		return
-	}
-
-	respJson, err := json.Marshal(respBody)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	_, err = w.Write(respJson)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("%v(%v) access successfully.\n", whitelist[body.Token].Description, GetClientIP(req))
 }

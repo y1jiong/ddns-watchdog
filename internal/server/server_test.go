@@ -26,11 +26,7 @@ func clearServerEnv(t *testing.T) {
 func TestLoadConfEnvOnlyUsesDefaults(t *testing.T) {
 	clearServerEnv(t)
 
-	origConfDir, origSrv := ConfDir, Srv
-	defer func() { ConfDir, Srv = origConfDir, origSrv }()
-
-	ConfDir = t.TempDir() // no server.json
-	Srv = server{}
+	useTempConf(t) // no server.json
 
 	if err := Srv.LoadConf(); err != nil {
 		t.Fatalf("LoadConf without server.json: %v", err)
@@ -58,16 +54,12 @@ func TestLoadConfEnvOnlyUsesDefaults(t *testing.T) {
 func TestLoadConfRejectsDuplicateRoutes(t *testing.T) {
 	clearServerEnv(t)
 
-	origConfDir, origSrv := ConfDir, Srv
-	defer func() { ConfDir, Srv = origConfDir, origSrv }()
-
-	ConfDir = t.TempDir()
+	useTempConf(t)
 	conf := `{"center_service": true, "route": {"get_ip": "/same", "center": "/same"}}`
 	if err := os.WriteFile(filepath.Join(ConfDir, ConfFilename), []byte(conf), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	Srv = server{}
 	if err := Srv.LoadConf(); err == nil {
 		t.Fatal("LoadConf accepted identical route.get_ip and route.center, which panics in ServeMux")
 	}
@@ -76,15 +68,11 @@ func TestLoadConfRejectsDuplicateRoutes(t *testing.T) {
 func TestLoadConfRejectsIncompleteTLS(t *testing.T) {
 	clearServerEnv(t)
 
-	origConfDir, origSrv := ConfDir, Srv
-	defer func() { ConfDir, Srv = origConfDir, origSrv }()
-
-	ConfDir = t.TempDir()
+	useTempConf(t)
 	if err := os.WriteFile(filepath.Join(ConfDir, ConfFilename), []byte(`{"tls": {"enable": true}}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	Srv = server{}
 	if err := Srv.LoadConf(); err == nil {
 		t.Fatal("LoadConf accepted tls.enable without cert_file/key_file")
 	}
@@ -92,11 +80,7 @@ func TestLoadConfRejectsIncompleteTLS(t *testing.T) {
 
 // Updating an existing token must apply -D, not silently keep the stored domain.
 func TestAddToWhitelistUpdateAppliesDomain(t *testing.T) {
-	origConfDir, origWhitelist := ConfDir, whitelist
-	defer func() { ConfDir, whitelist = origConfDir, origWhitelist }()
-
-	ConfDir = t.TempDir()
-	whitelist = nil
+	useTempConf(t)
 
 	if _, err := InitWhitelist(); err != nil {
 		t.Fatalf("InitWhitelist: %v", err)
@@ -115,7 +99,10 @@ func TestAddToWhitelistUpdateAppliesDomain(t *testing.T) {
 		t.Errorf("status = %q, want %q", status, UpdateSign)
 	}
 
-	got := whitelist[token]
+	got, ok := getWhitelistEntry(token)
+	if !ok {
+		t.Fatal("token disappeared from the whitelist")
+	}
 	if got.DomainRecord.Domain != "other.com" {
 		t.Errorf("domain = %q, want other.com (-D is ignored on update)", got.DomainRecord.Domain)
 	}

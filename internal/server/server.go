@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
+	"time"
 )
 
 const (
@@ -132,31 +134,59 @@ func (conf *server) applyEnvOverrides() {
 	}
 }
 
+// versionCacheTTL bounds how often the root server is asked for its version.
+const versionCacheTTL = 10 * time.Minute
+
+// The advertised version is cached in memory: the IP echo endpoint is
+// unauthenticated, so looking the version up on every request would let anyone
+// amplify traffic against the configured root server. Failures are cached too, so
+// an unreachable root server is not retried on every request either.
+var (
+	versionCacheMu sync.Mutex
+	versionCache   string
+	versionCached  time.Time
+)
+
 func (conf *server) GetLatestVersion() (str string) {
-	if !conf.IsRootServer {
-		resp, err := httpGet(conf.RootServerUrl)
-		if err != nil {
-			return "N/A (check network connection)"
-		}
-		defer resp.Body.Close()
-
-		respJson, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return "N/A (invalid response)"
-		}
-
-		var res common.GetIPResp
-		if err = json.Unmarshal(respJson, &res); err != nil {
-			return "N/A (invalid response)"
-		}
-
-		if res.Version == "" {
-			return "N/A (version info not found)"
-		}
-
-		return res.Version
+	if conf.IsRootServer {
+		return common.Version
 	}
-	return common.Version
+
+	versionCacheMu.Lock()
+	defer versionCacheMu.Unlock()
+
+	if time.Since(versionCached) < versionCacheTTL {
+		return versionCache
+	}
+
+	versionCache = conf.fetchLatestVersion()
+	versionCached = time.Now()
+	return versionCache
+}
+
+// fetchLatestVersion asks the configured root server which version it serves.
+func (conf *server) fetchLatestVersion() (str string) {
+	resp, err := httpGet(conf.RootServerUrl)
+	if err != nil {
+		return "N/A (check network connection)"
+	}
+	defer resp.Body.Close()
+
+	respJson, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "N/A (invalid response)"
+	}
+
+	var res common.GetIPResp
+	if err = json.Unmarshal(respJson, &res); err != nil {
+		return "N/A (invalid response)"
+	}
+
+	if res.Version == "" {
+		return "N/A (version info not found)"
+	}
+
+	return res.Version
 }
 
 func (conf *server) CheckLatestVersion() {

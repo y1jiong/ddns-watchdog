@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -220,7 +219,10 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 	return
 }
 
-func AccessCenter(ipv4, ipv6 string) {
+// AccessCenter reports the current addresses to the center proxy server. It
+// returns the message the center replied with, and an error when the update was
+// not delivered, so the caller can retry on the next cycle.
+func AccessCenter(ipv4, ipv6 string) (msg []string, err error) {
 	reqBody := common.CenterReq{
 		Token:  Client.Center.Token,
 		Enable: Client.Enable,
@@ -232,13 +234,11 @@ func AccessCenter(ipv4, ipv6 string) {
 
 	reqJson, err := json.Marshal(reqBody)
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
 	req, err := httpNewRequest(http.MethodPost, Client.Center.APIUrl, bytes.NewReader(reqJson))
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
@@ -246,32 +246,29 @@ func AccessCenter(ipv4, ipv6 string) {
 
 	resp, err := common.DefaultHttpClient.Do(req)
 	if err != nil {
-		log.Println(err)
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Println("The status code returned by the center is", resp.StatusCode)
-	}
-
 	respBodyJson, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
-		return
-	}
-	if len(respBodyJson) == 0 {
 		return
 	}
 
-	var respBody common.GeneralResp
-	if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
-		log.Println(err)
-		return
-	}
-	for v := range strings.SplitSeq(respBody.Message, "\n") {
-		if v != "" {
-			log.Println(v)
+	if len(respBodyJson) != 0 {
+		var respBody common.GeneralResp
+		if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
+			return
+		}
+		for v := range strings.SplitSeq(respBody.Message, "\n") {
+			if v != "" {
+				msg = append(msg, v)
+			}
 		}
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New("the center returned status code " + strconv.Itoa(resp.StatusCode))
+	}
+	return
 }

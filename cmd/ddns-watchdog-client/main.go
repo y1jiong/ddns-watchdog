@@ -281,35 +281,75 @@ func check() {
 		return
 	}
 
-	if ipv4 != client.Client.LatestIPv4 {
-		client.Client.LatestIPv4 = ipv4
-	}
-	if ipv6 != client.Client.LatestIPv6 {
-		client.Client.LatestIPv6 = ipv6
-	}
-
+	// Only remember the addresses once the update has been delivered. Committing
+	// them first would make the next cycle consider the records up to date and
+	// never retry a transient failure.
+	updated := false
 	if client.Client.Center.Enable {
-		client.AccessCenter(ipv4, ipv6)
+		updated = updateCenter(ipv4, ipv6)
+	} else {
+		updated = updateRecords(ipv4, ipv6)
+	}
+	if !updated {
 		return
 	}
 
-	wg := sync.WaitGroup{}
-	defer wg.Wait()
-	if client.Client.Services.DNSPod {
-		wg.Go(func() { serviceInterface(ipv4, ipv6, client.DP.Run) })
-	}
-	if client.Client.Services.AliDNS {
-		wg.Go(func() { serviceInterface(ipv4, ipv6, client.AD.Run) })
-	}
-	if client.Client.Services.Cloudflare {
-		wg.Go(func() { serviceInterface(ipv4, ipv6, client.Cf.Run) })
-	}
-	if client.Client.Services.HuaweiCloud {
-		wg.Go(func() { serviceInterface(ipv4, ipv6, client.HC.Run) })
-	}
+	client.Client.LatestIPv4 = ipv4
+	client.Client.LatestIPv6 = ipv6
 }
 
-func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) {
+// updateCenter reports the addresses to the center proxy.
+func updateCenter(ipv4, ipv6 string) (ok bool) {
+	msg, err := client.AccessCenter(ipv4, ipv6)
+	for _, row := range msg {
+		log.Println(row)
+	}
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
+
+// updateRecords runs every enabled provider and reports whether they all
+// succeeded.
+func updateRecords(ipv4, ipv6 string) (ok bool) {
+	var (
+		wg      sync.WaitGroup
+		results = make(chan bool, 4)
+	)
+
+	run := func(callback client.ServiceCallback) {
+		wg.Go(func() { results <- serviceInterface(ipv4, ipv6, callback) })
+	}
+	if client.Client.Services.DNSPod {
+		run(client.DP.Run)
+	}
+	if client.Client.Services.AliDNS {
+		run(client.AD.Run)
+	}
+	if client.Client.Services.Cloudflare {
+		run(client.Cf.Run)
+	}
+	if client.Client.Services.HuaweiCloud {
+		run(client.HC.Run)
+	}
+
+	wg.Wait()
+	close(results)
+
+	ok = true
+	for success := range results {
+		if !success {
+			ok = false
+		}
+	}
+	return
+}
+
+// serviceInterface runs one provider and reports whether it updated everything
+// that was asked of it.
+func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) bool {
 	msg, errs := callback(client.Client.Enable, ipv4, ipv6)
 	for _, row := range errs {
 		log.Println(row)
@@ -317,4 +357,5 @@ func serviceInterface(ipv4, ipv6 string, callback client.ServiceCallback) {
 	for _, row := range msg {
 		log.Println(row)
 	}
+	return len(errs) == 0
 }

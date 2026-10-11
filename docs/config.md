@@ -197,3 +197,7 @@ Manage entries with server CLI flags:
 # Delete
 ./ddns-watchdog-server -d -t <token>
 ```
+
+A running server picks the file up as soon as it changes, so a token added or
+deleted this way starts or stops working immediately - restarting the server is
+not required.

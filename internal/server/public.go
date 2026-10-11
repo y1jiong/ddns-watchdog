@@ -5,9 +5,12 @@ import (
 	"ddns-watchdog/internal/common"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -37,14 +40,75 @@ func GenerateToken(length int) (token string) {
 	return string(b)
 }
 
+func whitelistPath() string {
+	return ConfDir + "/" + WhitelistFilename
+}
+
+// fileState returns the modification time and size of path. They are what tells
+// the running server that the whitelist was edited from another process.
+func fileState(path string) (modTime time.Time, size int64) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return
+	}
+	return info.ModTime(), info.Size()
+}
+
+// loadWhitelist replaces the in-memory whitelist with the file content; a failed
+// read keeps the previous copy. Callers must hold whitelistMu.
+func loadWhitelist() (err error) {
+	var loaded map[string]whitelistStruct
+	if err = common.LoadAndUnmarshal(whitelistPath(), &loaded); err != nil {
+		return
+	}
+
+	whitelist = loaded
+	whitelistModTime, whitelistSize = fileState(whitelistPath())
+	return
+}
+
+// LoadWhitelist loads the whitelist file at startup.
+func LoadWhitelist() (err error) {
+	whitelistMu.Lock()
+	defer whitelistMu.Unlock()
+
+	return loadWhitelist()
+}
+
+// getWhitelistEntry looks a token up after reloading the file when it changed on
+// disk, which is what makes a token added or deleted by the CLI take effect
+// without restarting the server.
+func getWhitelistEntry(token string) (instance whitelistStruct, ok bool) {
+	whitelistMu.Lock()
+	defer whitelistMu.Unlock()
+
+	if modTime, size := fileState(whitelistPath()); modTime != whitelistModTime || size != whitelistSize {
+		if err := loadWhitelist(); err != nil {
+			log.Println(err)
+			// remember the state even on failure, so a broken file is not re-read
+			// and re-logged on every single request
+			whitelistModTime, whitelistSize = modTime, size
+		}
+	}
+
+	instance, ok = whitelist[token]
+	return
+}
+
 func DelFromWhitelist(token string) (msg string, err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist); err != nil {
+	whitelistMu.Lock()
+	defer whitelistMu.Unlock()
+
+	if err = loadWhitelist(); err != nil {
 		return
 	}
 	if _, ok := whitelist[token]; ok {
 		msg = fmt.Sprintf("%v has been deleted.\n", whitelist[token].Description)
 		delete(whitelist, token)
-		err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename)
+		if err = common.MarshalAndSave(whitelist, whitelistPath()); err != nil {
+			return
+		}
+		whitelistModTime, whitelistSize = fileState(whitelistPath())
 	} else {
 		msg = fmt.Sprintf("%v does not exist.\n", token)
 	}
@@ -72,7 +136,10 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 		return
 	}
 
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist); err != nil {
+	whitelistMu.Lock()
+	defer whitelistMu.Unlock()
+
+	if err = loadWhitelist(); err != nil {
 		return
 	}
 
@@ -130,23 +197,24 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 		status = InsertSign
 	}
 
-	if err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename); err != nil {
+	if err = common.MarshalAndSave(whitelist, whitelistPath()); err != nil {
 		return
 	}
+	whitelistModTime, whitelistSize = fileState(whitelistPath())
 	return
 }
 
 func InitWhitelist() (msg string, err error) {
+	whitelistMu.Lock()
+	defer whitelistMu.Unlock()
+
 	whitelist = make(map[string]whitelistStruct)
-	if err = common.MarshalAndSave(whitelist, ConfDir+"/"+WhitelistFilename); err != nil {
+	if err = common.MarshalAndSave(whitelist, whitelistPath()); err != nil {
 		return
 	}
+	whitelistModTime, whitelistSize = fileState(whitelistPath())
 
-	return "initialized " + ConfDir + "/" + WhitelistFilename, nil
-}
-
-func LoadWhitelist() (err error) {
-	return common.LoadAndUnmarshal(ConfDir+"/"+WhitelistFilename, &whitelist)
+	return "initialized " + whitelistPath(), nil
 }
 
 func GetClientIP(req *http.Request) (ip string) {

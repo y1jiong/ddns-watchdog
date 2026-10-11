@@ -5,11 +5,22 @@ import (
 	"ddns-watchdog/internal/common"
 	"io"
 	"net/http"
+	"sync"
+	"time"
 )
 
 const projName = "ddns-watchdog-server"
 
-var whitelist map[string]whitelistStruct
+var (
+	whitelist map[string]whitelistStruct
+
+	// whitelistMu guards whitelist and the file state below. The running server
+	// reloads the file when it changes on disk, so "ddns-watchdog-server -a/-d"
+	// takes effect without restarting it.
+	whitelistMu      sync.Mutex
+	whitelistModTime time.Time
+	whitelistSize    int64
+)
 
 type domainRecord struct {
 	Domain    string           `json:"domain"`
@@ -23,8 +34,10 @@ type whitelistStruct struct {
 	DomainRecord domainRecord `json:"domain_record"`
 }
 
-func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatus int, respBody common.GeneralResp, err error) {
-	httpStatus = http.StatusOK
+// doVirtualClient runs the provider configured for instance and returns the
+// status to report to the client. A provider error is reported as 502 with the
+// reason in the body, so the client knows the records were not updated.
+func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatus int, respBody common.GeneralResp) {
 	var (
 		msg  []string
 		errs []error
@@ -33,8 +46,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 	switch instance.Service {
 	case common.DNSPod:
 		if !Services.DNSPod.Enable {
-			httpStatus = http.StatusForbidden
-			return
+			return http.StatusForbidden, common.GeneralResp{Message: common.DNSPod + " is not enabled on this server"}
 		}
 
 		dp := client.DNSPod{
@@ -47,8 +59,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 		msg, errs = dp.Run(body.Enable, body.IP.IPv4, body.IP.IPv6)
 	case common.AliDNS:
 		if !Services.AliDNS.Enable {
-			httpStatus = http.StatusForbidden
-			return
+			return http.StatusForbidden, common.GeneralResp{Message: common.AliDNS + " is not enabled on this server"}
 		}
 
 		ad := client.AliDNS{
@@ -61,8 +72,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 		msg, errs = ad.Run(body.Enable, body.IP.IPv4, body.IP.IPv6)
 	case common.Cloudflare:
 		if !Services.Cloudflare.Enable {
-			httpStatus = http.StatusForbidden
-			return
+			return http.StatusForbidden, common.GeneralResp{Message: common.Cloudflare + " is not enabled on this server"}
 		}
 
 		// Cloudflare expects full domain names in its record API, unlike other providers that split subdomain + domain
@@ -78,8 +88,7 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 		msg, errs = cf.Run(body.Enable, body.IP.IPv4, body.IP.IPv6)
 	case common.HuaweiCloud:
 		if !Services.HuaweiCloud.Enable {
-			httpStatus = http.StatusForbidden
-			return
+			return http.StatusForbidden, common.GeneralResp{Message: common.HuaweiCloud + " is not enabled on this server"}
 		}
 
 		hc := client.HuaweiCloud{
@@ -94,16 +103,26 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 
 		msg, errs = hc.Run(body.Enable, body.IP.IPv4, body.IP.IPv6)
 	default:
-		httpStatus = http.StatusBadRequest
-		return
+		return http.StatusBadRequest, common.GeneralResp{Message: "unsupported provider: " + instance.Service}
 	}
 
-	respBody = common.GeneralResp{}
+	return centerResp(msg, errs)
+}
+
+// centerResp turns a provider run into the status to report to the client: 502
+// when the provider failed, so the client knows the records were not updated and
+// retries on its next cycle instead of assuming they are up to date.
+func centerResp(msg []string, errs []error) (httpStatus int, respBody common.GeneralResp) {
 	for _, v := range msg {
 		respBody.Message += v + "\n"
 	}
 	for _, v := range errs {
 		respBody.Message += v.Error() + "\n"
+	}
+
+	httpStatus = http.StatusOK
+	if len(errs) != 0 {
+		httpStatus = http.StatusBadGateway
 	}
 	return
 }
