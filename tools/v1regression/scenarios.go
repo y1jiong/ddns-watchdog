@@ -188,8 +188,8 @@ var cliScenarios = []Scenario{
 			res := t.Run("client", "-Z", "-c", t.Dir)
 			obs := observe(t, res)
 			// pflag prints the usage body first and the parse error last. The body is
-			// documentation (the subcommand synopsis it gained has its own unit test),
-			// so compare the error and only assert that usage was printed at all.
+			// documentation (the synopsis has its own unit test), so compare the error
+			// and only assert that usage was printed at all.
 			lines := strings.Split(strings.TrimRight(res.Stderr, "\n"), "\n")
 			obs.Stderr = fmt.Sprintf("%s\nusage_printed=%v",
 				lines[len(lines)-1], strings.Contains(res.Stderr, "Usage"))

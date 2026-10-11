@@ -43,8 +43,7 @@ Controls IP detection, DNS provider selection, and update interval.
 > check and exit immediately.
 >
 > A check whose update could not be delivered (network failure, rejected token,
-> provider error) is retried on the next check instead of being skipped until the
-> address changes again.
+> provider error) is retried on the next check, whether or not the address changed.
 
 **Example `client.json`:**
 

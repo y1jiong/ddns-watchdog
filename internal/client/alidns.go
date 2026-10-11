@@ -37,9 +37,8 @@ func (ad *AliDNS) InitConf() (msg string, err error) {
 
 func (ad *AliDNS) LoadConf() (err error) {
 	// A missing file is allowed: the provider may be configured through
-	// environment variables alone. missingFile keeps the stat error so that a
-	// config which is still empty afterward reports the missing file rather than
-	// a list of unset fields.
+	// environment variables alone. missingFile keeps the stat error, so a config
+	// that is still empty afterward reports the missing file.
 	var missingFile error
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil {
 		if !os.IsNotExist(err) {
