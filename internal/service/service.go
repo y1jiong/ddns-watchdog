@@ -26,7 +26,7 @@ type program struct {
 	done    chan struct{}
 }
 
-func (p *program) Start(s service.Service) error {
+func (p *program) Start(_ service.Service) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 	p.done = make(chan struct{})
@@ -38,9 +38,9 @@ func (p *program) Start(s service.Service) error {
 	return nil
 }
 
-func (p *program) Stop(s service.Service) error {
+func (p *program) Stop(_ service.Service) error {
 	// The run function is a long-lived loop (DNS check cycle / HTTP server), so it
-	// only returns once ctx is cancelled. Wait for it, but not indefinitely:
+	// only returns once ctx is canceled. Wait for it, but not indefinitely:
 	// blocking the OS service manager until its own timeout ends in SIGKILL.
 	if p.cancel != nil {
 		p.cancel()
@@ -58,7 +58,7 @@ func (p *program) Stop(s service.Service) error {
 }
 
 // New creates a service. extraArgs are appended to the binary command line when the service manager starts it.
-// runFunc must return when ctx is cancelled; Stop cancels ctx and waits (up to stopTimeout) for that to happen.
+// runFunc must return when ctx is canceled; Stop cancels ctx and waits (up to stopTimeout) for that to happen.
 func New(name, displayName, description string, extraArgs []string, runFunc func(context.Context)) (*Svc, error) {
 	cfg := &service.Config{
 		Name:        name,

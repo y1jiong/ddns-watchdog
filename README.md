@@ -98,12 +98,12 @@ See [docs/config.md](docs/config.md) for a full reference of all JSON config fil
 
 ## Supported Providers
 
-| Provider | Config File | Env Var Prefix |
-|---|---|---|
-| DNSPod (Tencent) | `dnspod.json` | `DDNS_DNSPOD_*` |
-| AliDNS (Alibaba) | `alidns.json` | `DDNS_ALIDNS_*` |
-| Cloudflare | `cloudflare.json` | `DDNS_CLOUDFLARE_*` |
-| Huawei Cloud | `huaweicloud.json` | `DDNS_HUAWEI_*` |
+| Provider         | Config File        | Env Var Prefix      |
+|------------------|--------------------|---------------------|
+| DNSPod (Tencent) | `dnspod.json`      | `DDNS_DNSPOD_*`     |
+| AliDNS (Alibaba) | `alidns.json`      | `DDNS_ALIDNS_*`     |
+| Cloudflare       | `cloudflare.json`  | `DDNS_CLOUDFLARE_*` |
+| Huawei Cloud     | `huaweicloud.json` | `DDNS_HUAWEI_*`     |
 
 See [docs/provider.md](docs/provider.md) for per-provider credential setup instructions.
 

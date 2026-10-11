@@ -98,12 +98,12 @@ sudo ./ddns-watchdog-client service uninstall
 
 ## 支持的服务商
 
-| 服务商 | 配置文件 | 环境变量前缀 |
-|---|---|---|
-| DNSPod（腾讯云）| `dnspod.json` | `DDNS_DNSPOD_*` |
-| 阿里云 DNS | `alidns.json` | `DDNS_ALIDNS_*` |
-| Cloudflare | `cloudflare.json` | `DDNS_CLOUDFLARE_*` |
-| 华为云 DNS | `huaweicloud.json` | `DDNS_HUAWEI_*` |
+| 服务商           | 配置文件           | 环境变量前缀        |
+|------------------|--------------------|---------------------|
+| DNSPod（腾讯云） | `dnspod.json`      | `DDNS_DNSPOD_*`     |
+| 阿里云 DNS       | `alidns.json`      | `DDNS_ALIDNS_*`     |
+| Cloudflare       | `cloudflare.json`  | `DDNS_CLOUDFLARE_*` |
+| 华为云 DNS       | `huaweicloud.json` | `DDNS_HUAWEI_*`     |
 
 各服务商的密钥获取方式请参阅 [docs/provider.zh.md](docs/provider.zh.md)。
 

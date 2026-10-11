@@ -269,7 +269,7 @@ func AccessCenter(ipv4, ipv6 string) {
 		log.Println(err)
 		return
 	}
-	for _, v := range strings.Split(respBody.Message, "\n") {
+	for v := range strings.SplitSeq(respBody.Message, "\n") {
 		if v != "" {
 			log.Println(v)
 		}
