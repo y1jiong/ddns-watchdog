@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"ddns-watchdog/internal/common"
 	"ddns-watchdog/internal/server"
@@ -97,16 +98,16 @@ func main() {
 		return
 	}
 
-	startServer()
+	startServer(context.Background())
 }
 
 func newService() (*intsvc.Svc, error) {
 	args := []string{"-c", absConfDir()}
-	return intsvc.New(svcName, svcDisplayName, svcDescription, args, func() {
+	return intsvc.New(svcName, svcDisplayName, svcDescription, args, func(ctx context.Context) {
 		if err := server.Srv.LoadConf(); err != nil {
 			log.Fatal(err)
 		}
-		startServer()
+		startServer(ctx)
 	})
 }
 
@@ -237,7 +238,7 @@ func initConf(event string) (err error) {
 	return
 }
 
-func startServer() {
+func startServer(ctx context.Context) {
 	if server.Srv.CenterService {
 		if err := server.Services.LoadConf(); err != nil {
 			log.Fatal(err)
@@ -259,6 +260,16 @@ func startServer() {
 	}
 	httpSrv.SetKeepAlivesEnabled(false)
 
+	// stop listening cleanly when the service manager asks us to shut down
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+			log.Println(err)
+		}
+	}()
+
 	var err error
 	if server.Srv.TLS.Enable {
 		log.Println("Work on", server.Srv.ServerAddr, "with TLS")
@@ -267,7 +278,7 @@ func startServer() {
 		log.Println("Work on", server.Srv.ServerAddr)
 		err = httpSrv.ListenAndServe()
 	}
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}
 }

@@ -32,6 +32,10 @@ Controls IP detection, DNS provider selection, and update interval.
 | `enable_ipv6_fallback` | bool | `true` | `DDNS_IPV6_FALLBACK` | Fall back to any global unicast IPv6 if preferred NIC has none |
 | `check_cycle_minutes` | int | `0` | `DDNS_CHECK_CYCLE` | Update interval in minutes (0 = run once and exit) |
 
+> Note: installing the client as a system service (`-I` / `service install`) requires
+> `check_cycle_minutes` to be greater than 0, otherwise the service would run a single
+> check and exit immediately.
+
 **Example `client.json`:**
 
 ```json

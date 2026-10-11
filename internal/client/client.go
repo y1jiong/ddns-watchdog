@@ -50,17 +50,26 @@ type service struct {
 
 func (conf *client) InitConf() (msg string, err error) {
 	*conf = client{}
-	conf.APIUrl.IPv4 = common.DefaultAPIUrl
-	conf.APIUrl.IPv6 = common.DefaultIPv6APIUrl
-	conf.APIUrl.Version = common.DefaultAPIUrl
-	conf.EnableIPv6Fallback = true
-	conf.CheckCycleMinutes = 0
+	conf.applyDefaults()
 
 	return "initialized " + ConfDir + "/" + ConfFilename,
 		common.MarshalAndSave(conf, ConfDir+"/"+ConfFilename)
 }
 
+// applyDefaults seeds the values InitConf() writes into a new config file.
+// LoadConf runs it before unmarshalling so that a missing or partial file (Docker
+// env-only setups) behaves like the generated template instead of leaving zero
+// values - notably enable_ipv6_fallback, which is documented as defaulting to true.
+func (conf *client) applyDefaults() {
+	conf.APIUrl.IPv4 = common.DefaultAPIUrl
+	conf.APIUrl.IPv6 = common.DefaultIPv6APIUrl
+	conf.APIUrl.Version = common.DefaultAPIUrl
+	conf.EnableIPv6Fallback = true
+}
+
 func (conf *client) LoadConf() (err error) {
+	conf.applyDefaults()
+
 	// Missing file is allowed: Docker users configure via env vars only.
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
 		return

@@ -77,6 +77,10 @@ func AddToWhitelist(token, message, service, domain, a, aaaa string) (status str
 	}
 
 	if v, ok := whitelist[token]; ok {
+		// every field left empty keeps its stored value
+		if domain != "" {
+			v.DomainRecord.Domain = domain
+		}
 		if a != "" {
 			v.DomainRecord.Subdomain.A = a
 		}

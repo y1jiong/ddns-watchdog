@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"ddns-watchdog/internal/client"
 	intsvc "ddns-watchdog/internal/service"
 	"errors"
@@ -63,6 +64,12 @@ func main() {
 
 	// "service <action>" subcommand (v2 addition)
 	if serviceAction != "" {
+		if serviceAction == "install" {
+			if e := installService(); e != nil {
+				log.Fatal(e)
+			}
+			return
+		}
 		svc, err := newService()
 		if err != nil {
 			log.Fatal(err)
@@ -94,7 +101,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	runLoop()
+	runLoop(context.Background())
 }
 
 func newService() (*intsvc.Svc, error) {
@@ -102,14 +109,34 @@ func newService() (*intsvc.Svc, error) {
 	return intsvc.New(svcName, svcDisplayName, svcDescription, args, startDaemon)
 }
 
-func startDaemon() {
+// installService loads the client config and installs the OS service.
+// A service whose check cycle is <= 0 would run a single check and exit, which is
+// never what "install a service" should mean, so that is refused (same as v1).
+func installService() error {
+	if err := client.Client.LoadConf(); err != nil {
+		return err
+	}
+	if client.Client.CheckCycleMinutes <= 0 {
+		return errors.New("check_cycle_minutes in " + client.ConfDir + "/" + client.ConfFilename +
+			" must be greater than 0 to install the service")
+	}
+
+	svc, err := newService()
+	if err != nil {
+		return err
+	}
+	intsvc.RunCommand(svc, "install")
+	return nil
+}
+
+func startDaemon(ctx context.Context) {
 	if err := client.Client.LoadConf(); err != nil {
 		log.Fatal(err)
 	}
 	if err := loadConf(); err != nil {
 		log.Fatal(err)
 	}
-	runLoop()
+	runLoop(ctx)
 }
 
 // absConfDir returns an absolute path for the conf directory.
@@ -167,12 +194,7 @@ func processFlag() (exit bool, err error) {
 
 	switch {
 	case *installOption:
-		svc, e := newService()
-		if e != nil {
-			return true, e
-		}
-		intsvc.RunCommand(svc, "install")
-		return true, nil
+		return true, installService()
 	case *uninstallOption:
 		svc, e := newService()
 		if e != nil {
@@ -235,16 +257,22 @@ func loadConf() (err error) {
 	return
 }
 
-func runLoop() {
+func runLoop(ctx context.Context) {
 	if client.Client.CheckCycleMinutes <= 0 {
 		check()
 		return
 	}
 
 	cycle := time.NewTicker(time.Duration(client.Client.CheckCycleMinutes) * time.Minute)
+	defer cycle.Stop()
+
 	for {
 		check()
-		<-cycle.C
+		select {
+		case <-cycle.C:
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

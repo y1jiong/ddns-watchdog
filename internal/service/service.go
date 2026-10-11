@@ -1,11 +1,18 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/kardianos/service"
 )
+
+// stopTimeout bounds how long Stop waits for the run function to return.
+// systemd's default TimeoutStopSec is 90s and the Windows SCM gives up after
+// about 30s, so waiting any longer only delays an unclean kill.
+var stopTimeout = 10 * time.Second
 
 // Svc wraps a kardianos service instance.
 type Svc struct {
@@ -13,29 +20,45 @@ type Svc struct {
 }
 
 type program struct {
-	exit    chan struct{}
-	runFunc func()
+	runFunc func(context.Context)
+	cancel  context.CancelFunc
+	done    chan struct{}
 }
 
 func (p *program) Start(s service.Service) error {
-	p.exit = make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
+	p.done = make(chan struct{})
+
 	go func() {
-		defer close(p.exit)
-		p.runFunc()
+		defer close(p.done)
+		p.runFunc(ctx)
 	}()
 	return nil
 }
 
 func (p *program) Stop(s service.Service) error {
-	// block until runFunc returns so the OS service manager gets an accurate stopped signal
-	if p.exit != nil {
-		<-p.exit
+	// The run function is a long-lived loop (DNS check cycle / HTTP server), so it
+	// only returns once ctx is cancelled. Wait for it, but not indefinitely:
+	// blocking the OS service manager until its own timeout ends in SIGKILL.
+	if p.cancel != nil {
+		p.cancel()
+	}
+	if p.done == nil {
+		return nil
+	}
+
+	select {
+	case <-p.done:
+	case <-time.After(stopTimeout):
+		fmt.Fprintf(os.Stderr, "service did not stop within %v, exiting anyway\n", stopTimeout)
 	}
 	return nil
 }
 
 // New creates a service. extraArgs are appended to the binary command line when the service manager starts it.
-func New(name, displayName, description string, extraArgs []string, runFunc func()) (*Svc, error) {
+// runFunc must return when ctx is cancelled; Stop cancels ctx and waits (up to stopTimeout) for that to happen.
+func New(name, displayName, description string, extraArgs []string, runFunc func(context.Context)) (*Svc, error) {
 	cfg := &service.Config{
 		Name:        name,
 		DisplayName: displayName,

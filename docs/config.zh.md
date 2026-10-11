@@ -32,6 +32,9 @@
 | `enable_ipv6_fallback` | bool | `true` | `DDNS_IPV6_FALLBACK` | 当首选网卡无 IPv6 全球单播地址时自动回落 |
 | `check_cycle_minutes` | int | `0` | `DDNS_CHECK_CYCLE` | 更新检查间隔（分钟），0 表示运行一次后退出 |
 
+> 注意：将客户端安装为系统服务（`-I` / `service install`）时，`check_cycle_minutes`
+> 必须大于 0，否则服务执行一次检查后就会立即退出。
+
 **client.json 示例：**
 
 ```json
