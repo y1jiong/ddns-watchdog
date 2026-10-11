@@ -10,3 +10,4 @@ bin/
 **/.DS_Store
 build/
 test/
+dist/

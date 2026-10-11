@@ -6,6 +6,10 @@ builds:
     main: ./cmd/ddns-watchdog-client/
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    mod_timestamp: "{{ .CommitTimestamp }}"
     ldflags:
       - -s -w -buildid=
       - -X "ddns-watchdog/internal/common.GitCommit={{.Commit}}"
@@ -36,6 +40,10 @@ builds:
     main: ./cmd/ddns-watchdog-server/
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    mod_timestamp: "{{ .CommitTimestamp }}"
     ldflags:
       - -s -w -buildid=
       - -X "ddns-watchdog/internal/common.GitCommit={{.Commit}}"
@@ -75,8 +83,12 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end -}}
       {{- if and (eq .Arch "amd64") (ne .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
     files:
-      - LICENSE
-      - README.md
+      - src: LICENSE
+        info: { mtime: "{{ .CommitDate }}" }
+      - src: README.md
+        info: { mtime: "{{ .CommitDate }}" }
+      - src: docs/*.md
+        info: { mtime: "{{ .CommitDate }}" }
 
   - id: server
     ids: [server]
@@ -91,8 +103,12 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end -}}
       {{- if and (eq .Arch "amd64") (ne .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
     files:
-      - LICENSE
-      - README.md
+      - src: LICENSE
+        info: { mtime: "{{ .CommitDate }}" }
+      - src: README.md
+        info: { mtime: "{{ .CommitDate }}" }
+      - src: docs/*.md
+        info: { mtime: "{{ .CommitDate }}" }
 
 checksum:
   name_template: checksums.txt
@@ -106,6 +122,8 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - "^docs:"
-      - "^test:"
-      - "^chore:"
+      - '^docs(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - '^chore(\(.+\))?:'
+      - '^refactor(\(.+\))?:'
+      - '^style(\(.+\))?:'
