@@ -7,9 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 
@@ -157,13 +158,7 @@ func processFlag() (exit bool, err error) {
 			return
 		}
 
-		arr := make([]string, 0, len(interfaces))
-		for name := range interfaces {
-			arr = append(arr, name)
-		}
-		sort.Strings(arr)
-
-		for _, name := range arr {
+		for _, name := range slices.Sorted(maps.Keys(interfaces)) {
 			fmt.Printf("%v\n\t%v\n", name, interfaces[name])
 		}
 		return true, nil

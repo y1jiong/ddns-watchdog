@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math/big"
 	"net"
 	"net/http"
@@ -22,7 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -78,11 +79,7 @@ func (t *Target) env() []string {
 		k, v, _ := strings.Cut(kv, "=")
 		m[k] = v
 	}
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(m))
 	out := make([]string, 0, len(m))
 	for _, k := range keys {
 		out = append(out, k+"="+m[k])

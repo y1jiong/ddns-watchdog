@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -219,22 +220,15 @@ func InitWhitelist() (msg string, err error) {
 
 func GetClientIP(req *http.Request) (ip string) {
 	// X-Forwarded-For may be a comma-separated chain; the first value is the original client IP
-	ip = req.Header.Get("X-Forwarded-For")
-	if idx := strings.IndexByte(ip, ','); idx != -1 {
-		ip = ip[:idx]
-	}
+	ip, _, _ = strings.Cut(req.Header.Get("X-Forwarded-For"), ",")
 	if ip == "" {
 		ip = req.Header.Get("X-Real-IP")
 	}
 	if ip == "" && req.RemoteAddr != "" {
-		if req.RemoteAddr[0] == '[' {
-			if idx := strings.LastIndexByte(req.RemoteAddr, ']'); idx != -1 {
-				ip = req.RemoteAddr[1:idx]
-			}
-		} else {
-			if idx := strings.LastIndexByte(req.RemoteAddr, ':'); idx != -1 {
-				ip = req.RemoteAddr[:idx]
-			}
+		// RemoteAddr is "host:port"; SplitHostPort also strips the brackets
+		// around an IPv6 literal.
+		if host, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
+			ip = host
 		}
 	}
 	ip = strings.TrimSpace(ip)

@@ -4,6 +4,7 @@ import (
 	"ddns-watchdog/internal/common"
 	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -44,7 +45,7 @@ func (dpc *DNSPod) LoadConf() (err error) {
 	// that is still empty afterward reports the missing file.
 	var missingFile error
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+DNSPodConfFilename, &dpc); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		missingFile = err

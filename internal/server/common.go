@@ -5,6 +5,7 @@ import (
 	"ddns-watchdog/internal/common"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -113,12 +114,16 @@ func doVirtualClient(body common.CenterReq, instance whitelistStruct) (httpStatu
 // when the provider failed, so the client knows the records were not updated and
 // retries on its next cycle.
 func centerResp(msg []string, errs []error) (httpStatus int, respBody common.GeneralResp) {
+	var message strings.Builder
 	for _, v := range msg {
-		respBody.Message += v + "\n"
+		message.WriteString(v)
+		message.WriteByte('\n')
 	}
 	for _, v := range errs {
-		respBody.Message += v.Error() + "\n"
+		message.WriteString(v.Error())
+		message.WriteByte('\n')
 	}
+	respBody.Message = message.String()
 
 	httpStatus = http.StatusOK
 	if len(errs) != 0 {

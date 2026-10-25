@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+	"io/fs"
 	"os"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
@@ -41,7 +42,7 @@ func (ad *AliDNS) LoadConf() (err error) {
 	// that is still empty afterward reports the missing file.
 	var missingFile error
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+AliDNSConfFilename, &ad); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		missingFile = err

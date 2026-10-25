@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -115,11 +116,7 @@ type field struct {
 }
 
 func fieldsOf(o *Observation) []field {
-	files := make([]string, 0, len(o.Files))
-	for k := range o.Files {
-		files = append(files, k)
-	}
-	sort.Strings(files)
+	files := slices.Sorted(maps.Keys(o.Files))
 
 	fs := []field{
 		{name: "exit_code", v1: []string{fmt.Sprint(o.ExitCode)}, ordered: true},

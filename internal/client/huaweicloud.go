@@ -3,6 +3,7 @@ package client
 import (
 	"ddns-watchdog/internal/common"
 	"errors"
+	"io/fs"
 	"os"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
@@ -46,7 +47,7 @@ func (hc *HuaweiCloud) LoadConf() (err error) {
 	// that is still empty afterward reports the missing file.
 	var missingFile error
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+HuaweiCloudConfFilename, &hc); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		missingFile = err
@@ -236,11 +237,10 @@ func (hc *HuaweiCloud) updateParseRecord(ipAddr, recordSetId, recordType, domain
 	request := &model.UpdateRecordSetRequest{}
 	request.ZoneId = hc.ZoneId
 	request.RecordsetId = recordSetId
-	listRecordsBody := []string{ipAddr}
 	request.Body = &model.UpdateRecordSetReq{
-		Records: &listRecordsBody,
-		Type:    &recordType,
-		Name:    &domain,
+		Records: new([]string{ipAddr}),
+		Type:    new(recordType),
+		Name:    new(domain),
 	}
 
 	_, err = dns.NewDnsClient(hhc).UpdateRecordSet(request)
