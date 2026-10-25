@@ -2,7 +2,7 @@ package server
 
 import (
 	"ddns-watchdog/internal/common"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"strings"

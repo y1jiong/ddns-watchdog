@@ -3,8 +3,9 @@ package client
 import (
 	"bytes"
 	"ddns-watchdog/internal/common"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -239,7 +240,8 @@ func (cfc *Cloudflare) updateParseRecord(ipAddr, domainId, recordType, domain st
 
 			code := ""
 			switch v := element["code"].(type) {
-			case json.Number:
+			// go-simplejson yields numeric codes as a type with a String method.
+			case fmt.Stringer:
 				code = v.String()
 			case string:
 				code = v

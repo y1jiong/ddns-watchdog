@@ -2,7 +2,8 @@ package common
 
 import (
 	"crypto/tls"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"net"
 	"net/http"
 	"os"
@@ -96,7 +97,7 @@ func LoadAndUnmarshal(filePath string, dst any) (err error) {
 		return
 	}
 
-	return json.Unmarshal(jsonContent, &dst)
+	return json.Unmarshal(jsonContent, &dst, json.MatchCaseInsensitiveNames(true))
 }
 
 func MarshalAndSave(content any, filePath string) (err error) {
@@ -104,7 +105,10 @@ func MarshalAndSave(content any, filePath string) (err error) {
 		return
 	}
 
-	jsonContent, err := json.MarshalIndent(content, "", "\t")
+	jsonContent, err := json.Marshal(content,
+		json.Deterministic(true),
+		jsontext.WithIndent("\t"),
+	)
 	if err != nil {
 		return
 	}

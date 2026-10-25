@@ -1,7 +1,8 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"net"
 	"net/http"
@@ -33,7 +34,7 @@ func (s Scenario) String() string { return s.Group + "/" + s.Name }
 // ---------------------------------------------------------------------------
 
 func prettyJSON(v any) string {
-	b, err := json.MarshalIndent(v, "", "\t")
+	b, err := json.Marshal(v, json.Deterministic(true), jsontext.WithIndent("\t"))
 	must(err)
 	return string(b)
 }
