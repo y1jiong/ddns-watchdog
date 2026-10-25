@@ -51,6 +51,24 @@ func TestLoadConfEnvOnlyUsesDefaults(t *testing.T) {
 	mux.HandleFunc(Srv.Route.GetIP, RespGetIPReq)
 }
 
+// -V must work without server.json and fall back to the default upstream.
+func TestLoadVersionConfWithoutFileUsesDefaults(t *testing.T) {
+	clearServerEnv(t)
+
+	useTempConf(t) // no server.json
+	Srv = server{}
+
+	if err := Srv.LoadVersionConf(); err != nil {
+		t.Fatalf("LoadVersionConf without server.json: %v", err)
+	}
+	if Srv.RootServerUrl != common.DefaultAPIUrl {
+		t.Errorf("root_server_url = %q, want the default %q", Srv.RootServerUrl, common.DefaultAPIUrl)
+	}
+	if Srv.IsRootServer {
+		t.Error("is_root_server = true, want the default false")
+	}
+}
+
 func TestLoadConfRejectsDuplicateRoutes(t *testing.T) {
 	clearServerEnv(t)
 

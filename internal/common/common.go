@@ -3,15 +3,11 @@ package common
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
-
-	"golang.org/x/mod/semver"
 )
 
 const (
@@ -147,17 +143,4 @@ func ExpandIPv6Zero(ip string) string {
 		b = appendHex(b, (uint16(p[i])<<8)|uint16(p[i+1]))
 	}
 	return string(b)
-}
-
-func VersionTips(latestVersion string) {
-	fmt.Println("current version:", Version)
-	fmt.Println("latest version:", latestVersion)
-	fmt.Println("git commit:", GitCommit)
-	fmt.Println("build time:", BuildTime)
-	switch {
-	case strings.Contains(latestVersion, "N/A"):
-		fmt.Println("\n" + latestVersion + "\ncheck for updates manually at " + projectUrl)
-	case semver.Compare("v"+Version, "v"+latestVersion) < 0:
-		fmt.Println("\nnew version available, visit " + projectUrl + " to download")
-	}
 }

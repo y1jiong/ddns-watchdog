@@ -2,10 +2,8 @@ package server
 
 import (
 	"ddns-watchdog/internal/common"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sync"
 	"time"
@@ -53,6 +51,20 @@ func (conf *server) InitConf() (msg string, err error) {
 	}
 
 	return "initialized " + ConfDir + "/" + ConfFilename, nil
+}
+
+// LoadVersionConf loads only what -V needs: whether this is the root server and
+// which upstream to ask. A missing server.json is not an error - the defaults
+// apply - and route/TLS validation does not matter for a version check.
+func (conf *server) LoadVersionConf() (err error) {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
+		return
+	}
+	err = nil
+
+	conf.applyEnvOverrides()
+	conf.applyDefaults()
+	return
 }
 
 func (conf *server) LoadConf() (err error) {
@@ -142,61 +154,50 @@ const versionCacheTTL = 10 * time.Minute
 // amplify traffic against the configured root server. Failures are cached too, so
 // an unreachable root server is not retried on every request either.
 var (
-	versionCacheMu sync.Mutex
-	versionCache   string
-	versionCached  time.Time
+	versionCacheMu  sync.Mutex
+	versionCache    string
+	versionCacheErr error
+	versionCached   time.Time
 )
 
-func (conf *server) GetLatestVersion() (str string) {
+func (conf *server) latestVersion() (string, error) {
 	if conf.IsRootServer {
-		return common.Version
+		return common.Version, nil
 	}
 
 	versionCacheMu.Lock()
 	defer versionCacheMu.Unlock()
 
 	if time.Since(versionCached) < versionCacheTTL {
-		return versionCache
+		return versionCache, versionCacheErr
 	}
 
-	versionCache = conf.fetchLatestVersion()
+	versionCache, versionCacheErr = conf.fetchLatestVersion()
 	versionCached = time.Now()
-	return versionCache
+	return versionCache, versionCacheErr
+}
+
+func (conf *server) GetLatestVersion() (str string) {
+	version, err := conf.latestVersion()
+	if err != nil {
+		// The echo endpoint is unauthenticated; do not leak the upstream address
+		// or the exact failure to every caller.
+		return "N/A (upstream unavailable)"
+	}
+	return version
 }
 
 // fetchLatestVersion asks the configured root server which version it serves.
-func (conf *server) fetchLatestVersion() (str string) {
-	resp, err := httpGet(conf.RootServerUrl)
-	if err != nil {
-		return "N/A (check network connection)"
-	}
-	defer resp.Body.Close()
-
-	respJson, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "N/A (invalid response)"
-	}
-
-	var res common.GetIPResp
-	if err = json.Unmarshal(respJson, &res); err != nil {
-		return "N/A (invalid response)"
-	}
-
-	if res.Version == "" {
-		return "N/A (version info not found)"
-	}
-
-	return res.Version
+func (conf *server) fetchLatestVersion() (string, error) {
+	return common.LatestVersion(conf.RootServerUrl, projName+"/"+common.Version)
 }
 
 func (conf *server) CheckLatestVersion() {
-	if !conf.IsRootServer {
-		common.VersionTips(conf.GetLatestVersion())
+	if conf.IsRootServer {
+		fmt.Println("this is the root server")
+		common.VersionTips("", nil)
 		return
 	}
 
-	fmt.Println("this is the root server")
-	fmt.Println("current version:", common.Version)
-	fmt.Println("git commit:", common.GitCommit)
-	fmt.Println("build time:", common.BuildTime)
+	common.VersionTips(conf.RootServerUrl, conf.latestVersion)
 }

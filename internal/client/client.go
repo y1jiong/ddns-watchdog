@@ -2,9 +2,7 @@ package client
 
 import (
 	"ddns-watchdog/internal/common"
-	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"strconv"
 )
@@ -66,6 +64,27 @@ func (conf *client) applyDefaults() {
 	conf.APIUrl.IPv6 = common.DefaultIPv6APIUrl
 	conf.APIUrl.Version = common.DefaultAPIUrl
 	conf.EnableIPv6Fallback = true
+}
+
+// LoadVersionConf loads only what -V needs: the version API URL. A missing
+// client.json falls back to the default API, and the service/IP validation in
+// LoadConf is skipped for a version check.
+func (conf *client) LoadVersionConf() (err error) {
+	conf.applyDefaults()
+
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+		err = nil
+	}
+
+	conf.applyEnvOverrides()
+
+	if conf.APIUrl.Version == "" {
+		conf.APIUrl.Version = common.DefaultAPIUrl
+	}
+	return
 }
 
 func (conf *client) LoadConf() (err error) {
@@ -163,32 +182,21 @@ func (conf *client) applyEnvOverrides() {
 	}
 }
 
-func (conf *client) GetLatestVersion() (str string) {
-	resp, err := httpGet(conf.APIUrl.Version)
-	if err != nil {
-		return "N/A (check network connection)"
+// versionAPIURL returns the configured version endpoint, falling back to the
+// default API when nothing is configured.
+func (conf *client) versionAPIURL() string {
+	if conf.APIUrl.Version == "" {
+		return common.DefaultAPIUrl
 	}
-	defer resp.Body.Close()
+	return conf.APIUrl.Version
+}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "N/A (invalid response)"
-	}
-
-	var res common.GetIPResp
-	if err = json.Unmarshal(body, &res); err != nil {
-		return "N/A (invalid response)"
-	}
-	if res.Version == "" {
-		return "N/A (version info not found)"
-	}
-
-	return res.Version
+// GetLatestVersion returns the version the configured API reports, or the
+// concrete reason the lookup failed.
+func (conf *client) GetLatestVersion() (string, error) {
+	return common.LatestVersion(conf.versionAPIURL(), projName+"/"+common.Version)
 }
 
 func (conf *client) CheckLatestVersion() {
-	if conf.APIUrl.Version == "" {
-		conf.APIUrl.Version = common.DefaultAPIUrl
-	}
-	common.VersionTips(conf.GetLatestVersion())
+	common.VersionTips(conf.versionAPIURL(), conf.GetLatestVersion)
 }

@@ -213,4 +213,26 @@ var intended = []Intended{
 		V2Match: "<ADDR> GET /",
 		Why:     "v2 feature: with env-only configuration the IP API is queried at all; v1 stops before that",
 	},
+	// -V output rules: the asynchronous status line and the concrete failure
+	// report.
+	{
+		Scenario: "version-check", Field: "stdout",
+		V2Match: "checking latest version at",
+		Why:     "v2 prints the endpoint while the asynchronous lookup is in flight; v1 printed nothing until the request finished",
+	},
+	{
+		Scenario: "version-check-offline", Field: "stdout",
+		V1Match: "N/A (请检查网络连接)", V2Match: "checking latest version at",
+		Why: "v2 prints the endpoint while the asynchronous lookup is in flight; v1 printed nothing until the request failed",
+	},
+	{
+		Scenario: "version-check-offline", Field: "stdout",
+		V1Match: "N/A (请检查网络连接)", V2Match: "unavailable",
+		Why: "v2 uses a dedicated status line and reports the concrete reason; v1 folded every failure into the version text",
+	},
+	{
+		Scenario: "version-check-offline", Field: "stdout",
+		V2Match: "error: request failed:",
+		Why:     "v2 names the concrete lookup failure (here: connection refused); v1 only said the network should be checked",
+	},
 }

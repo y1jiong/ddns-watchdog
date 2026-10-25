@@ -186,13 +186,16 @@ func processFlag() (exit bool, err error) {
 		return
 	}
 
-	if err = server.Srv.LoadConf(); err != nil {
-		return
-	}
-
 	if *version {
+		if err = server.Srv.LoadVersionConf(); err != nil {
+			return
+		}
 		server.Srv.CheckLatestVersion()
 		return true, nil
+	}
+
+	if err = server.Srv.LoadConf(); err != nil {
+		return
 	}
 
 	switch {

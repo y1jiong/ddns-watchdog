@@ -88,7 +88,7 @@ unexpected exit.
 # Force-update even if IP hasn't changed
 ./ddns-watchdog-client -f
 
-# Check version and latest release
+# Check version and latest release (uses the default API without a config file)
 ./ddns-watchdog-client -V
 ```
 

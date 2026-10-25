@@ -178,13 +178,16 @@ func processFlag() (exit bool, err error) {
 		return true, nil
 	}
 
-	if err = client.Client.LoadConf(); err != nil {
-		return
-	}
-
 	if *version {
+		if err = client.Client.LoadVersionConf(); err != nil {
+			return
+		}
 		client.Client.CheckLatestVersion()
 		return true, nil
+	}
+
+	if err = client.Client.LoadConf(); err != nil {
+		return
 	}
 
 	switch {

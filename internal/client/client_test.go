@@ -95,6 +95,66 @@ func TestLoadConfPartialFileMergesDefaults(t *testing.T) {
 	}
 }
 
+// -V must work before the client is configured: with no client.json it checks
+// the default API without requiring a full client configuration.
+func TestLoadVersionConfWithoutFileUsesDefaultAPI(t *testing.T) {
+	clearClientEnv(t)
+
+	origConfDir, origClient := ConfDir, Client
+	defer func() { ConfDir, Client = origConfDir, origClient }()
+
+	ConfDir = t.TempDir() // no client.json
+	Client = client{}
+
+	if err := Client.LoadVersionConf(); err != nil {
+		t.Fatalf("LoadVersionConf without client.json: %v", err)
+	}
+	if Client.APIUrl.Version != common.DefaultAPIUrl {
+		t.Errorf("api_url.version = %q, want the default %q", Client.APIUrl.Version, common.DefaultAPIUrl)
+	}
+}
+
+// A configured version API is honored by -V.
+func TestLoadVersionConfReadsConfiguredAPI(t *testing.T) {
+	clearClientEnv(t)
+
+	origConfDir, origClient := ConfDir, Client
+	defer func() { ConfDir, Client = origConfDir, origClient }()
+
+	ConfDir = t.TempDir()
+	conf := `{"api_url": {"version": "https://version.example.com"}}`
+	if err := os.WriteFile(filepath.Join(ConfDir, ConfFilename), []byte(conf), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	Client = client{}
+
+	if err := Client.LoadVersionConf(); err != nil {
+		t.Fatalf("LoadVersionConf: %v", err)
+	}
+	if Client.APIUrl.Version != "https://version.example.com" {
+		t.Errorf("api_url.version = %q, want the value from client.json", Client.APIUrl.Version)
+	}
+}
+
+// The environment override has the same precedence for -V as for a normal run.
+func TestLoadVersionConfEnvOverride(t *testing.T) {
+	clearClientEnv(t)
+	t.Setenv("DDNS_API_URL_VERSION", "https://env.example.com")
+
+	origConfDir, origClient := ConfDir, Client
+	defer func() { ConfDir, Client = origConfDir, origClient }()
+
+	ConfDir = t.TempDir()
+	Client = client{}
+
+	if err := Client.LoadVersionConf(); err != nil {
+		t.Fatalf("LoadVersionConf: %v", err)
+	}
+	if Client.APIUrl.Version != "https://env.example.com" {
+		t.Errorf("api_url.version = %q, want the environment override", Client.APIUrl.Version)
+	}
+}
+
 // A fresh, entirely unconfigured run must say which file to edit and how to
 // create it.
 func TestLoadConfMissingFileHint(t *testing.T) {

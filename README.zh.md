@@ -87,7 +87,7 @@ sudo ./ddns-watchdog-client service uninstall
 # 强制更新（即使 IP 未变化）
 ./ddns-watchdog-client -f
 
-# 查看版本并检查更新
+# 查看版本并检查更新（无配置文件时使用默认 API）
 ./ddns-watchdog-client -V
 ```
 
