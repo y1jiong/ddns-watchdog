@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -53,7 +54,7 @@ func (cfc *Cloudflare) LoadConf() (err error) {
 	// that is still empty afterward reports the missing file.
 	var missingFile error
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+CloudflareConfFilename, &cfc); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		missingFile = err

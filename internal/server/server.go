@@ -1,9 +1,11 @@
 package server
 
 import (
+	"cmp"
 	"ddns-watchdog/internal/common"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"sync"
 	"time"
@@ -57,7 +59,7 @@ func (conf *server) InitConf() (msg string, err error) {
 // which upstream to ask. A missing server.json is not an error - the defaults
 // apply - and route/TLS validation does not matter for a version check.
 func (conf *server) LoadVersionConf() (err error) {
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	err = nil
@@ -69,7 +71,7 @@ func (conf *server) LoadVersionConf() (err error) {
 
 func (conf *server) LoadConf() (err error) {
 	// Missing file is allowed: Docker users configure via env vars only.
-	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !os.IsNotExist(err) {
+	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	err = nil
@@ -83,18 +85,10 @@ func (conf *server) LoadConf() (err error) {
 // (Docker) deployment keeps ServerAddr and the routes empty, and net/http then binds
 // :80 while http.HandleFunc("") panics on the empty route pattern.
 func (conf *server) applyDefaults() {
-	if conf.ServerAddr == "" {
-		conf.ServerAddr = defaultServerAddr
-	}
-	if conf.RootServerUrl == "" {
-		conf.RootServerUrl = common.DefaultAPIUrl
-	}
-	if conf.Route.GetIP == "" {
-		conf.Route.GetIP = defaultRouteGetIP
-	}
-	if conf.Route.Center == "" {
-		conf.Route.Center = defaultRouteCenter
-	}
+	conf.ServerAddr = cmp.Or(conf.ServerAddr, defaultServerAddr)
+	conf.RootServerUrl = cmp.Or(conf.RootServerUrl, common.DefaultAPIUrl)
+	conf.Route.GetIP = cmp.Or(conf.Route.GetIP, defaultRouteGetIP)
+	conf.Route.Center = cmp.Or(conf.Route.Center, defaultRouteCenter)
 }
 
 // validate rejects configs that would otherwise fail later with an obscure runtime error.

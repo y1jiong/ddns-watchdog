@@ -1,8 +1,10 @@
 package client
 
 import (
+	"cmp"
 	"ddns-watchdog/internal/common"
 	"errors"
+	"io/fs"
 	"os"
 	"strconv"
 )
@@ -73,7 +75,7 @@ func (conf *client) LoadVersionConf() (err error) {
 	conf.applyDefaults()
 
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		err = nil
@@ -81,9 +83,7 @@ func (conf *client) LoadVersionConf() (err error) {
 
 	conf.applyEnvOverrides()
 
-	if conf.APIUrl.Version == "" {
-		conf.APIUrl.Version = common.DefaultAPIUrl
-	}
+	conf.APIUrl.Version = cmp.Or(conf.APIUrl.Version, common.DefaultAPIUrl)
 	return
 }
 
@@ -93,7 +93,7 @@ func (conf *client) LoadConf() (err error) {
 	// Missing file is allowed: Docker users configure via env vars only.
 	missing := false
 	if err = common.LoadAndUnmarshal(ConfDir+"/"+ConfFilename, &conf); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return
 		}
 		missing = true
@@ -185,10 +185,7 @@ func (conf *client) applyEnvOverrides() {
 // versionAPIURL returns the configured version endpoint, falling back to the
 // default API when nothing is configured.
 func (conf *client) versionAPIURL() string {
-	if conf.APIUrl.Version == "" {
-		return common.DefaultAPIUrl
-	}
-	return conf.APIUrl.Version
+	return cmp.Or(conf.APIUrl.Version, common.DefaultAPIUrl)
 }
 
 // GetLatestVersion returns the version the configured API reports, or the

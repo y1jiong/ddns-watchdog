@@ -75,8 +75,8 @@ func fetchLatestVersion(apiURL, userAgent string, timeout time.Duration) (string
 // describeVersionError turns a transport error into a short, specific reason
 // while keeping the original detail (dial error, TLS error, DNS name) attached.
 func describeVersionError(err error, timeout time.Duration) error {
-	var netErr net.Error
-	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout()) {
+	netErr, isNetErr := errors.AsType[net.Error](err)
+	if errors.Is(err, context.DeadlineExceeded) || (isNetErr && netErr.Timeout()) {
 		return fmt.Errorf("request timed out after %s", timeout)
 	}
 	if errors.Is(err, context.Canceled) {

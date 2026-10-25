@@ -41,10 +41,7 @@ func NetworkInterfaces() (map[string]string, error) {
 		}
 
 		for i, addrAndMask := range ipAddr {
-			ip := addrAndMask.String()
-			if idx := strings.LastIndexByte(ip, '/'); idx != -1 {
-				ip = ip[:idx]
-			}
+			ip, _, _ := strings.Cut(addrAndMask.String(), "/")
 			if strings.Contains(ip, ":") {
 				ip = common.ExpandIPv6Zero(ip)
 			}
@@ -76,9 +73,9 @@ func fallbackIPv6(interfaces map[string]string, preferred string) (string, bool)
 			return ip, true
 		}
 
-		if idx := strings.LastIndexByte(preferred, ' '); idx != -1 {
-			if _, err := strconv.Atoi(preferred[idx+1:]); err == nil {
-				preferred = preferred[:idx]
+		if name, index, ok := strings.CutLast(preferred, " "); ok {
+			if _, err := strconv.Atoi(index); err == nil {
+				preferred = name
 			}
 		}
 

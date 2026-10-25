@@ -75,23 +75,12 @@ type GeneralResp struct {
 	Message string `json:"message"`
 }
 
-func IsDirExistAndCreate(dirPath string) (err error) {
-	_, err = os.Stat(dirPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(dirPath, 0o750)
-		}
-		return
-	}
-	return
+func IsDirExistAndCreate(dirPath string) error {
+	// MkdirAll succeeds when the directory already exists.
+	return os.MkdirAll(dirPath, 0o750)
 }
 
 func LoadAndUnmarshal(filePath string, dst any) (err error) {
-	_, err = os.Stat(filePath)
-	if err != nil {
-		return
-	}
-
 	jsonContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return
