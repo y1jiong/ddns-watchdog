@@ -2,7 +2,7 @@ package common
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -62,7 +62,7 @@ func fetchLatestVersion(apiURL, userAgent string, timeout time.Duration) (string
 	}
 
 	var res GetIPResp
-	if err = json.Unmarshal(body, &res); err != nil {
+	if err = json.Unmarshal(body, &res, json.MatchCaseInsensitiveNames(true)); err != nil {
 		return "", fmt.Errorf("invalid JSON response from version API: %w", err)
 	}
 	if res.Version == "" {

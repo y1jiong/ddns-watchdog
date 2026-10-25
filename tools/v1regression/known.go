@@ -72,6 +72,12 @@ var translations = []Translation{
 	{V2: "N/A (invalid response)", V1: "N/A (数据包错误)", Doc: "version lookup failure"},
 	{V2: "N/A (version info not found)", V1: "N/A (没有获取到版本信息)", Doc: "version lookup failure"},
 
+	// --- encoding/json/v2 parser wording ---
+	{V2: "jsontext: invalid character '<' at start of value",
+		V1: "invalid character '<' looking for beginning of value", Doc: "JSON parser wording"},
+	{V2: `jsontext: unexpected EOF within "/token" after offset 9`,
+		V1: "unexpected end of JSON input", Doc: "JSON parser wording"},
+
 	// --- messages that only appear in one place ---
 	{V2: "unknown init option: 9", V1: "你初始化了一个寂寞", Doc: "unknown -i option message"},
 	{V2: "the center returned status code 403", V1: "The status code returned by the center is 403",

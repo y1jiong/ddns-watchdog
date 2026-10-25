@@ -2,7 +2,7 @@ package server
 
 import (
 	"ddns-watchdog/internal/common"
-	"encoding/json"
+	"encoding/json/v2"
 	"io"
 	"log"
 	"net/http"
@@ -57,7 +57,7 @@ func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var body common.CenterReq
-	if err = json.Unmarshal(bodyJson, &body); err != nil {
+	if err = json.Unmarshal(bodyJson, &body, json.MatchCaseInsensitiveNames(true)); err != nil {
 		log.Println(err)
 		writeJson(w, http.StatusBadRequest, common.GeneralResp{Message: "invalid request body"})
 		return

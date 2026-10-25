@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"ddns-watchdog/internal/common"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"io"
 	"net"
@@ -153,7 +153,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			}
 
 			var ipInfo common.GetIPResp
-			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
+			if err = json.Unmarshal(respJson, &ipInfo, json.MatchCaseInsensitiveNames(true)); err != nil {
 				return
 			}
 			ipv4 = ipInfo.IP
@@ -202,7 +202,7 @@ func GetOwnIP(enabled common.Enable, apiUrl apiUrl, nc networkCard, fallback boo
 			}
 
 			var ipInfo common.GetIPResp
-			if err = json.Unmarshal(respJson, &ipInfo); err != nil {
+			if err = json.Unmarshal(respJson, &ipInfo, json.MatchCaseInsensitiveNames(true)); err != nil {
 				return
 			}
 			ipv6 = ipInfo.IP
@@ -257,7 +257,7 @@ func AccessCenter(ipv4, ipv6 string) (msg []string, err error) {
 
 	if len(respBodyJson) != 0 {
 		var respBody common.GeneralResp
-		if err = json.Unmarshal(respBodyJson, &respBody); err != nil {
+		if err = json.Unmarshal(respBodyJson, &respBody, json.MatchCaseInsensitiveNames(true)); err != nil {
 			return
 		}
 		for v := range strings.SplitSeq(respBody.Message, "\n") {
