@@ -241,13 +241,11 @@ func startServer(ctx context.Context) {
 		if err := server.Services.LoadConf(); err != nil {
 			log.Fatal(err)
 		}
-		http.HandleFunc(server.Srv.Route.Center, server.RespCenterReq)
 	}
-
-	http.HandleFunc(server.Srv.Route.GetIP, server.RespGetIPReq)
 
 	httpSrv := http.Server{
 		Addr:              server.Srv.ServerAddr,
+		Handler:           server.NewHandler(),
 		ReadTimeout:       5 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
 		WriteTimeout:      5 * time.Second,

@@ -46,8 +46,9 @@ func setWhitelist(t *testing.T, entries map[string]whitelistStruct) {
 	whitelistModTime, whitelistSize = fileState(whitelistPath())
 }
 
-// Every rejection must carry a JSON body, otherwise a client can only report a
-// bare status code.
+// The center handler's own rejections carry a JSON body, so a client can report
+// why the request was not served. Method mismatches are answered by ServeMux
+// before the handler runs (see TestNewHandlerRoutesByMethod).
 func TestRespCenterReqRejectionsCarryJsonBody(t *testing.T) {
 	useTempConf(t)
 	setWhitelist(t, map[string]whitelistStruct{
@@ -60,12 +61,6 @@ func TestRespCenterReqRejectionsCarryJsonBody(t *testing.T) {
 		body       string
 		wantStatus int
 	}{
-		{
-			name:       "wrong method",
-			method:     http.MethodGet,
-			body:       "",
-			wantStatus: http.StatusMethodNotAllowed,
-		},
 		{
 			name:       "malformed body",
 			method:     http.MethodPost,
@@ -111,23 +106,70 @@ func TestRespCenterReqRejectionsCarryJsonBody(t *testing.T) {
 	}
 }
 
-func TestRespGetIPReqWrongMethodCarriesJsonBody(t *testing.T) {
+// NewHandler dispatches on method and exact path. An unsupported method is
+// answered by ServeMux with 405, an Allow header and a text body.
+func TestNewHandlerRoutesByMethod(t *testing.T) {
 	useTempConf(t)
-
-	rec := httptest.NewRecorder()
-	RespGetIPReq(rec, httptest.NewRequest(http.MethodPost, "/", nil))
-
-	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	Srv = server{
+		IsRootServer:  true, // the echo handler answers without an upstream lookup
+		CenterService: true,
+		Route:         route{GetIP: "/", Center: "/center"},
 	}
+	h := NewHandler()
 
-	var resp common.GeneralResp
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("response %q is not JSON: %v", rec.Body.String(), err)
-	}
-	if resp.Message == "" {
-		t.Errorf("response %q carries no message", rec.Body.String())
-	}
+	t.Run("GET reaches the echo handler", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("GET / status = %d, want %d", rec.Code, http.StatusOK)
+		}
+	})
+
+	t.Run("POST to the echo route is 405", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/", nil))
+
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("POST / status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+		}
+		if got := rec.Header().Get("Allow"); !strings.Contains(got, http.MethodGet) || !strings.Contains(got, http.MethodHead) {
+			t.Errorf("Allow = %q, want GET and HEAD", got)
+		}
+	})
+
+	t.Run("GET to the center route is 405", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/center", nil))
+
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("GET /center status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+		}
+		if got := rec.Header().Get("Allow"); got != http.MethodPost {
+			t.Errorf("Allow = %q, want POST", got)
+		}
+	})
+
+	t.Run("POST reaches the center handler", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/center", strings.NewReader("{")))
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("POST /center status = %d, want %d", rec.Code, http.StatusBadRequest)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json", ct)
+		}
+	})
+
+	t.Run("unregistered paths return 404", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/other", nil))
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("GET /other status = %d, want %d", rec.Code, http.StatusNotFound)
+		}
+	})
 }
 
 func TestRespGetIPReqReturnsAddressAsJson(t *testing.T) {

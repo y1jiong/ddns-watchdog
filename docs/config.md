@@ -227,4 +227,6 @@ the providers address records differently:
 The center answers a client with a JSON body: `403` for an unknown or disabled
 token, `403` when the provider is not enabled on the server, `400` for an
 unreadable request and `502` when the provider rejected the update. A `200` means
-every requested record was updated or already correct.
+every requested record was updated or already correct. A request with any other
+method is answered by the HTTP server with `405` and an `Allow` header before the
+center handler runs.

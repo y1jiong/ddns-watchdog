@@ -2,7 +2,6 @@ package server
 
 import (
 	"ddns-watchdog/internal/common"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,8 +20,8 @@ func clearServerEnv(t *testing.T) {
 	}
 }
 
-// An env-only deployment has no server.json at all; the documented defaults must
-// still apply, otherwise the server binds :80 and http.HandleFunc("") panics.
+// An env-only deployment has no server.json at all, so the documented defaults
+// supply ServerAddr and the routes; an empty route pattern panics in NewHandler.
 func TestLoadConfEnvOnlyUsesDefaults(t *testing.T) {
 	clearServerEnv(t)
 
@@ -41,14 +40,13 @@ func TestLoadConfEnvOnlyUsesDefaults(t *testing.T) {
 		t.Errorf("route.center = %q, want %q", Srv.Route.Center, defaultRouteCenter)
 	}
 
-	// the routes must be usable patterns - an empty one panics inside ServeMux
-	mux := http.NewServeMux()
+	// the routes must be usable patterns - an empty one panics inside NewHandler
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("registering config routes panics: %v", r)
 		}
 	}()
-	mux.HandleFunc(Srv.Route.GetIP, RespGetIPReq)
+	_ = NewHandler()
 }
 
 // -V must work without server.json and fall back to the default upstream.

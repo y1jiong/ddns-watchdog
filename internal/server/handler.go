@@ -6,11 +6,35 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
-// writeJson sends body as a JSON response with the given status code. Every
-// response, including a rejection, carries a body so that a client can report why
-// the request was not served.
+// NewHandler returns the HTTP handler for the configured routes. The HTTP method
+// is part of each ServeMux pattern: the matching handler runs for a supported
+// method, and any other method on a configured route gets 405 with an Allow
+// header.
+func NewHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET "+exactRoute(Srv.Route.GetIP), RespGetIPReq)
+	if Srv.CenterService {
+		mux.HandleFunc("POST "+exactRoute(Srv.Route.Center), RespCenterReq)
+	}
+	return mux
+}
+
+// exactRoute returns an exact ServeMux pattern for route. A trailing slash gets
+// the end-of-path wildcard, so the pattern matches only that path and sibling
+// routes such as /center keep their own patterns.
+func exactRoute(route string) string {
+	if strings.HasSuffix(route, "/") {
+		return route + "{$}"
+	}
+	return route
+}
+
+// writeJson sends body as a JSON response with the given status code. Callers
+// pass a message for a rejection so that a client can report why the request was
+// not served.
 func writeJson(w http.ResponseWriter, status int, body any) {
 	respJson, err := json.Marshal(body)
 	if err != nil {
@@ -27,13 +51,9 @@ func writeJson(w http.ResponseWriter, status int, body any) {
 	}
 }
 
+// RespGetIPReq answers the IP echo endpoint. NewHandler routes GET and HEAD here.
 func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
-
-	if req.Method != http.MethodGet {
-		writeJson(w, http.StatusMethodNotAllowed, common.GeneralResp{Message: "method not allowed, use GET"})
-		return
-	}
 
 	writeJson(w, http.StatusOK, common.GetIPResp{
 		IP:      GetClientIP(req),
@@ -41,13 +61,9 @@ func RespGetIPReq(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// RespCenterReq answers the center endpoint. NewHandler routes only POST here.
 func RespCenterReq(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
-
-	if req.Method != http.MethodPost {
-		writeJson(w, http.StatusMethodNotAllowed, common.GeneralResp{Message: "method not allowed, use POST"})
-		return
-	}
 
 	bodyJson, err := io.ReadAll(req.Body)
 	if err != nil {

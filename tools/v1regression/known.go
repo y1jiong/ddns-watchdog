@@ -182,27 +182,28 @@ var intended = []Intended{
 		Why: "v2 applies the documented default enable_ipv6_fallback=true when an older v1 client.json predates the key (v1 left it false)",
 	},
 
-	// Batch B made every response carry a JSON body, including rejections, and
-	// turned an unreadable request body into 400 instead of 500.
+	// Rejections from the center handler itself carry a JSON body; an unreadable
+	// request body is a 400. Method mismatches are answered by ServeMux before a
+	// handler runs, so they carry its standard text body.
 	{
 		Scenario: "echo-wrong-method", Field: "responses",
-		V1Match: "405 ct= body=", V2Match: "method not allowed, use GET",
-		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
+		V1Match: "405 ct= body=", V2Match: "405 ct=text/plain; charset=utf-8 body=Method Not Allowed",
+		Why: "v2 dispatches on the HTTP method; ServeMux answers an unsupported method with the standard text/plain 405",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "is not enabled on this server",
-		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
+		Why: "v2 sends a JSON body with handler rejections",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "token is disabled",
-		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
+		Why: "v2 sends a JSON body with handler rejections",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
 		V1Match: "403 ct= body=", V2Match: "invalid token",
-		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
+		Why: "v2 sends a JSON body with handler rejections",
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
@@ -211,8 +212,8 @@ var intended = []Intended{
 	},
 	{
 		Scenario: "center-token-flows", Field: "responses",
-		V1Match: "405 ct= body=", V2Match: "method not allowed, use POST",
-		Why: "v2 sends a JSON body with every rejection; v1 sent an empty body (status code unchanged)",
+		V1Match: "405 ct= body=", V2Match: "405 ct=text/plain; charset=utf-8 body=Method Not Allowed",
+		Why: "v2 dispatches on the HTTP method; ServeMux answers GET on the POST-only center route with the standard text/plain 405",
 	},
 	{
 		Scenario: "no-config-file", Field: "requests",

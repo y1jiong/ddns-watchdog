@@ -81,9 +81,9 @@ func (conf *server) LoadConf() (err error) {
 	return conf.validate()
 }
 
-// applyDefaults fills in what InitConf() would have written. Without it an env-only
-// (Docker) deployment keeps ServerAddr and the routes empty, and net/http then binds
-// :80 while http.HandleFunc("") panics on the empty route pattern.
+// applyDefaults seeds the defaults InitConf writes to a new config file. An
+// env-only (Docker) deployment has no file, so ServerAddr and the routes start
+// from these values; an empty route pattern panics in NewHandler.
 func (conf *server) applyDefaults() {
 	conf.ServerAddr = cmp.Or(conf.ServerAddr, defaultServerAddr)
 	conf.RootServerUrl = cmp.Or(conf.RootServerUrl, common.DefaultAPIUrl)
