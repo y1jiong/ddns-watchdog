@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -130,30 +131,32 @@ func (w *lineSignalWriter) String() string {
 // The local build information must be printed while the lookup is still in
 // flight, otherwise -V blocks on the network before showing anything.
 func TestVersionTipsPrintsLocalInfoBeforeLookupCompletes(t *testing.T) {
-	w := newLineSignalWriter()
-	fetch := func() (string, error) {
-		select {
-		case <-w.three:
-			return "9.9.9", nil
-		case <-time.After(2 * time.Second):
-			return "", errors.New("local build info was not printed before the lookup")
+	synctest.Test(t, func(t *testing.T) {
+		w := newLineSignalWriter()
+		fetch := func() (string, error) {
+			select {
+			case <-w.three:
+				return "9.9.9", nil
+			case <-time.After(2 * time.Second):
+				return "", errors.New("local build info was not printed before the lookup")
+			}
 		}
-	}
 
-	printVersionTips(w, "https://version.example.com", fetch)
+		printVersionTips(w, "https://version.example.com", fetch)
 
-	out := w.String()
-	for _, want := range []string{
-		"current version: " + Version,
-		"git commit: ",
-		"build time: ",
-		"checking latest version at https://version.example.com ...",
-		"latest version: 9.9.9",
-	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("output %q does not contain %q", out, want)
+		out := w.String()
+		for _, want := range []string{
+			"current version: " + Version,
+			"git commit: ",
+			"build time: ",
+			"checking latest version at https://version.example.com ...",
+			"latest version: 9.9.9",
+		} {
+			if !strings.Contains(out, want) {
+				t.Errorf("output %q does not contain %q", out, want)
+			}
 		}
-	}
+	})
 }
 
 // The default endpoint is used so often that echoing it only adds noise.
