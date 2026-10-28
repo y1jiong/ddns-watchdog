@@ -6,7 +6,7 @@ test/
 docs-internal/
 *.md
 Dockerfile
-docker-compose.yml
+compose.yaml
 .goreleaser.yaml
 Makefile
 client.mk
