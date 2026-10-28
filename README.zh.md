@@ -38,8 +38,8 @@ ddns-watchdog 自动检测你的公网 IP，当 IP 发生变化时更新 DNS 解
 ### Docker Compose
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/y1jiong/ddns-watchdog/main/docker-compose.yml -o docker-compose.yml
-# 编辑 docker-compose.yml，填入服务商凭证
+curl -fsSL https://raw.githubusercontent.com/y1jiong/ddns-watchdog/main/compose.yaml -o compose.yaml
+# 编辑 compose.yaml，填入服务商凭证
 docker compose up -d
 ```
 

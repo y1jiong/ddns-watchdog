@@ -38,8 +38,8 @@ Download the archive for your platform from [Releases](https://github.com/y1jion
 ### Docker Compose
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/y1jiong/ddns-watchdog/main/docker-compose.yml -o docker-compose.yml
-# Edit docker-compose.yml and fill in your provider credentials
+curl -fsSL https://raw.githubusercontent.com/y1jiong/ddns-watchdog/main/compose.yaml -o compose.yaml
+# Edit compose.yaml and fill in your provider credentials
 docker compose up -d
 ```
 
